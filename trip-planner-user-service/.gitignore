@@ -4,6 +4,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+src/main/resources/private.pem
+src/main/resources/public.pem
+
 ### STS ###
 .apt_generated
 .classpath
