@@ -4,8 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-src/main/resources/private.pem
-src/main/resources/public.pem
+src/main/resources/*.pem
 
 ### STS ###
 .apt_generated
