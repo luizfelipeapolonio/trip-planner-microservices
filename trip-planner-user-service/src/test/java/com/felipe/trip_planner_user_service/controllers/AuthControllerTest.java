@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_user_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.felipe.trip_planner_user_service.dtos.UserLoginDTO;
 import com.felipe.trip_planner_user_service.dtos.UserRegisterDTO;
 import com.felipe.trip_planner_user_service.dtos.UserResponseDTO;
 import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsException;
@@ -18,10 +19,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.Mockito.times;
@@ -109,5 +113,56 @@ public class AuthControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.userService, times(1)).register(userRegisterDTO);
+  }
+
+  @Test
+  @DisplayName("login - Should return a success response with user info and the access token")
+  void loginSuccess() throws Exception {
+    UserLoginDTO loginDTO = new UserLoginDTO("user1@email.com", "123456");
+    String jsonBody = this.objectMapper.writeValueAsString(loginDTO);
+
+    Map<String, Object> loginResponseMap = new HashMap<>(2);
+    loginResponseMap.put("user", this.user);
+    loginResponseMap.put("token", "Access Token");
+
+    when(this.userService.login(loginDTO)).thenReturn(loginResponseMap);
+
+    this.mockMvc.perform(post(BASE_URL + "/login")
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Usuário logado com sucesso"))
+      .andExpect(jsonPath("$.data.userInfo.id").value(this.user.getId().toString()))
+      .andExpect(jsonPath("$.data.userInfo.name").value(this.user.getName()))
+      .andExpect(jsonPath("$.data.userInfo.email").value(this.user.getEmail()))
+      .andExpect(jsonPath("$.data.userInfo.password").doesNotExist())
+      .andExpect(jsonPath("$.data.userInfo.createdAt").value(this.user.getCreatedAt().toString()))
+      .andExpect(jsonPath("$.data.userInfo.updatedAt").value(this.user.getUpdatedAt().toString()))
+      .andExpect(jsonPath("$.data.token").value("Access Token"));
+
+    verify(this.userService, times(1)).login(loginDTO);
+  }
+
+  @Test
+  @DisplayName("login - Should return an error response with unauthorized status code")
+  void loginFailsByBadCredentials() throws Exception {
+    UserLoginDTO loginDTO = new UserLoginDTO("user1@email.com", "123456");
+    String jsonBody = this.objectMapper.writeValueAsString(loginDTO);
+
+    when(this.userService.login(loginDTO))
+      .thenThrow(new BadCredentialsException("Usuário ou senha inválidos"));
+
+    this.mockMvc.perform(post(BASE_URL + "/login")
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+      .andExpect(jsonPath("$.message").value("Usuário ou senha inválidos"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.userService, times(1)).login(loginDTO);
   }
 }
