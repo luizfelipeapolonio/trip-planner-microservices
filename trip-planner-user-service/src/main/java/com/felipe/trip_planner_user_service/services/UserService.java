@@ -3,6 +3,8 @@ package com.felipe.trip_planner_user_service.services;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.felipe.trip_planner_user_service.dtos.UserLoginDTO;
 import com.felipe.trip_planner_user_service.dtos.UserResponseDTO;
+import com.felipe.trip_planner_user_service.dtos.UserUpdateDTO;
+import com.felipe.trip_planner_user_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsException;
 import com.felipe.trip_planner_user_service.dtos.UserRegisterDTO;
 import com.felipe.trip_planner_user_service.models.User;
@@ -10,6 +12,7 @@ import com.felipe.trip_planner_user_service.repositories.UserRepository;
 import com.felipe.trip_planner_user_service.security.AuthService;
 import com.felipe.trip_planner_user_service.security.JwtService;
 import com.felipe.trip_planner_user_service.security.UserPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -87,5 +91,27 @@ public class UserService {
     Authentication authentication = this.authService.getAuthentication();
     UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
     return userPrincipal.getUser();
+  }
+
+  public User update(UUID userId, UserUpdateDTO updateDTO) {
+    Authentication authentication = this.authService.getAuthentication();
+    UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+    UUID authenticatedUserId = userPrincipal.getUser().getId();
+
+    if(!userId.equals(authenticatedUserId)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
+    }
+
+    return this.userRepository.findById(userId)
+      .map(foundUser ->  {
+        if(updateDTO.name() != null) {
+          foundUser.setName(updateDTO.name());
+        }
+        if(updateDTO.password() != null) {
+          foundUser.setPassword(this.passwordEncoder.encode(updateDTO.password()));
+        }
+        return this.userRepository.save(foundUser);
+      })
+      .orElseThrow(() -> new RecordNotFoundException("Usuário de id: '" + userId + "' não encontrado"));
   }
 }
