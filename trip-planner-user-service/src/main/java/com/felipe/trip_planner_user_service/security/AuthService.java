@@ -24,7 +24,7 @@ public class AuthService implements UserDetailsService {
       .orElseThrow(() -> new UsernameNotFoundException("Usuário com e-mail: " + username + " não encontrado"));
   }
 
-  public Authentication getAuthenticatedUser() {
+  public Authentication getAuthentication() {
     return SecurityContextHolder.getContext().getAuthentication();
   }
 }
