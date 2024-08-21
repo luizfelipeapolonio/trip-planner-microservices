@@ -1,6 +1,8 @@
 package com.felipe.trip_planner_user_service.controllers;
 
 import com.auth0.jwt.exceptions.JWTCreationException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.felipe.trip_planner_user_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsException;
 import com.felipe.trip_planner_user_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_user_service.utils.response.CustomValidationErrors;
@@ -69,6 +71,39 @@ public class ExceptionControllerAdvice {
     response.setStatus(ResponseConditionStatus.ERROR);
     response.setCode(HttpStatus.INTERNAL_SERVER_ERROR);
     response.setMessage(e.getMessage());
+    response.setData(null);
+    return response;
+  }
+
+  @ExceptionHandler(JWTVerificationException.class)
+  @ResponseStatus(HttpStatus.UNAUTHORIZED)
+  public CustomResponseBody<Void> handleJWTVerificationException(JWTVerificationException e) {
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.ERROR);
+    response.setCode(HttpStatus.UNAUTHORIZED);
+    response.setMessage(e.getMessage());
+    response.setData(null);
+    return response;
+  }
+
+  @ExceptionHandler(RecordNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public CustomResponseBody<Void> handleRecordNotFoundException(RecordNotFoundException e) {
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.ERROR);
+    response.setCode(HttpStatus.NOT_FOUND);
+    response.setMessage(e.getMessage());
+    response.setData(null);
+    return response;
+  }
+
+  @ExceptionHandler(Exception.class)
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  public CustomResponseBody<Void> handleUncaughtException() {
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.ERROR);
+    response.setCode(HttpStatus.INTERNAL_SERVER_ERROR);
+    response.setMessage("Ocorreu um erro interno do servidor");
     response.setData(null);
     return response;
   }

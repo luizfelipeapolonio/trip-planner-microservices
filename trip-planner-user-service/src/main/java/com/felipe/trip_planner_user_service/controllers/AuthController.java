@@ -10,8 +10,10 @@ import com.felipe.trip_planner_user_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_user_service.utils.response.ResponseConditionStatus;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,5 +59,11 @@ public class AuthController {
     response.setMessage("Usuário logado com sucesso");
     response.setData(userLoginResponseDTO);
     return response;
+  }
+
+  @GetMapping("/validate")
+  @ResponseStatus(HttpStatus.OK)
+  public UserResponseDTO validateToken(@RequestHeader("accessToken") String token) {
+    return this.userService.validateToken(token);
   }
 }

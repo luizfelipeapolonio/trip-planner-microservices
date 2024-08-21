@@ -1,6 +1,8 @@
 package com.felipe.trip_planner_user_service.services;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.felipe.trip_planner_user_service.dtos.UserLoginDTO;
+import com.felipe.trip_planner_user_service.dtos.UserResponseDTO;
 import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsException;
 import com.felipe.trip_planner_user_service.dtos.UserRegisterDTO;
 import com.felipe.trip_planner_user_service.models.User;
@@ -68,5 +70,12 @@ public class UserService {
     } catch(BadCredentialsException e) {
       throw new BadCredentialsException("Usuário ou senha inválidos", e);
     }
+  }
+
+  public UserResponseDTO validateToken(String token) {
+    String email = this.jwtService.validateToken(token);
+    return this.userRepository.findByEmail(email)
+      .map(UserResponseDTO::new)
+      .orElseThrow(() -> new JWTVerificationException("Token inválido"));
   }
 }
