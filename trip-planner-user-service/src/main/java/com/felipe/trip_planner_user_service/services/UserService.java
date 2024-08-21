@@ -7,6 +7,7 @@ import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsExceptio
 import com.felipe.trip_planner_user_service.dtos.UserRegisterDTO;
 import com.felipe.trip_planner_user_service.models.User;
 import com.felipe.trip_planner_user_service.repositories.UserRepository;
+import com.felipe.trip_planner_user_service.security.AuthService;
 import com.felipe.trip_planner_user_service.security.JwtService;
 import com.felipe.trip_planner_user_service.security.UserPrincipal;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,17 +28,20 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final JwtService jwtService;
+  private final AuthService authService;
 
   public UserService(
     UserRepository userRepository,
     PasswordEncoder passwordEncoder,
     AuthenticationManager authenticationManager,
-    JwtService jwtService
+    JwtService jwtService,
+    AuthService authService
   ) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.jwtService = jwtService;
+    this.authService = authService;
   }
 
   public User register(UserRegisterDTO userRegisterDTO) {
@@ -77,5 +81,11 @@ public class UserService {
     return this.userRepository.findByEmail(email)
       .map(UserResponseDTO::new)
       .orElseThrow(() -> new JWTVerificationException("Token inválido"));
+  }
+
+  public User getAuthenticatedUserProfile() {
+    Authentication authentication = this.authService.getAuthentication();
+    UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+    return userPrincipal.getUser();
   }
 }
