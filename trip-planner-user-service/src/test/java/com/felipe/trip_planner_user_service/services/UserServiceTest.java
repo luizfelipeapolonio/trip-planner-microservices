@@ -1,7 +1,9 @@
 package com.felipe.trip_planner_user_service.services;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.felipe.trip_planner_user_service.dtos.UserLoginDTO;
 import com.felipe.trip_planner_user_service.dtos.UserRegisterDTO;
+import com.felipe.trip_planner_user_service.dtos.UserResponseDTO;
 import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsException;
 import com.felipe.trip_planner_user_service.models.User;
 import com.felipe.trip_planner_user_service.repositories.UserRepository;
@@ -162,5 +164,45 @@ public class UserServiceTest {
     verify(this.authenticationManager, times(1)).authenticate(auth);
     verify(this.authentication, never()).getPrincipal();
     verify(this.jwtService, never()).generateToken(any(UserPrincipal.class));
+  }
+
+  @Test
+  @DisplayName("validateToken - Should successfully validate the token, and find the user by the returned e-mail")
+  void validateTokenSuccess() {
+    String token = "Access Token";
+    String email = "user1@email.com";
+
+    when(this.jwtService.validateToken(token)).thenReturn(email);
+    when(this.userRepository.findByEmail(email)).thenReturn(Optional.of(this.user));
+
+    UserResponseDTO validatedUser = this.userService.validateToken(token);
+
+    assertThat(validatedUser.id()).isEqualTo(this.user.getId().toString());
+    assertThat(validatedUser.name()).isEqualTo(this.user.getName());
+    assertThat(validatedUser.email()).isEqualTo(this.user.getEmail());
+    assertThat(validatedUser.createdAt()).isEqualTo(this.user.getCreatedAt());
+    assertThat(validatedUser.updatedAt()).isEqualTo(this.user.getUpdatedAt());
+
+    verify(this.jwtService, times(1)).validateToken(token);
+    verify(this.userRepository, times(1)).findByEmail(email);
+  }
+
+  @Test
+  @DisplayName("validateToken - Should throw a JWTVerificationException if user is not found")
+  void validateTokenFailsByInvalidToken() {
+    String token = "Access Token";
+    String email = "user1@email.com";
+
+    when(this.jwtService.validateToken(token)).thenReturn(email);
+    when(this.userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.userService.validateToken(token));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(JWTVerificationException.class)
+      .hasMessage("Token inválido");
+
+    verify(this.jwtService, times(1)).validateToken(token);
+    verify(this.userRepository, times(1)).findByEmail(email);
   }
 }

@@ -1,5 +1,6 @@
 package com.felipe.trip_planner_user_service.controllers;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipe.trip_planner_user_service.dtos.UserLoginDTO;
 import com.felipe.trip_planner_user_service.dtos.UserRegisterDTO;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -164,5 +166,46 @@ public class AuthControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.userService, times(1)).login(loginDTO);
+  }
+
+  @Test
+  @DisplayName("validateToken - Should return a success response with ok status code and the validated user")
+  void validateTokenSuccess() throws Exception {
+    String token = "Access Token";
+    UserResponseDTO validatedUser = new UserResponseDTO(this.user);
+
+    when(this.userService.validateToken(token)).thenReturn(validatedUser);
+
+    this.mockMvc.perform(get(BASE_URL + "/validate")
+      .accept(MediaType.APPLICATION_JSON)
+      .header("accessToken", token))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id").value(this.user.getId().toString()))
+      .andExpect(jsonPath("$.name").value(this.user.getName()))
+      .andExpect(jsonPath("$.email").value(this.user.getEmail()))
+      .andExpect(jsonPath("$.password").doesNotExist())
+      .andExpect(jsonPath("$.createdAt").value(this.user.getCreatedAt().toString()))
+      .andExpect(jsonPath("$.updatedAt").value(this.user.getUpdatedAt().toString()));
+
+    verify(this.userService, times(1)).validateToken(token);
+  }
+
+  @Test
+  @DisplayName("validateToken - Should return an error response with unauthorized status code")
+  void validateTokenFailsByInvalidToken() throws Exception {
+    String token = "Access Token";
+
+    when(this.userService.validateToken(token))
+      .thenThrow(new JWTVerificationException("Token inválido"));
+
+    this.mockMvc.perform(get(BASE_URL + "/validate")
+      .accept(MediaType.APPLICATION_JSON)
+      .header("accessToken", token))
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+      .andExpect(jsonPath("$.message").value("Token inválido"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.userService, times(1)).validateToken(token);
   }
 }
