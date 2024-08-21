@@ -7,6 +7,7 @@ import com.felipe.trip_planner_user_service.dtos.UserResponseDTO;
 import com.felipe.trip_planner_user_service.exceptions.UserAlreadyExistsException;
 import com.felipe.trip_planner_user_service.models.User;
 import com.felipe.trip_planner_user_service.repositories.UserRepository;
+import com.felipe.trip_planner_user_service.security.AuthService;
 import com.felipe.trip_planner_user_service.security.JwtService;
 import com.felipe.trip_planner_user_service.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,9 @@ public class UserServiceTest {
 
   @Mock
   JwtService jwtService;
+
+  @Mock
+  AuthService authService;
 
   private User user;
 
@@ -204,5 +208,25 @@ public class UserServiceTest {
 
     verify(this.jwtService, times(1)).validateToken(token);
     verify(this.userRepository, times(1)).findByEmail(email);
+  }
+
+  @Test
+  @DisplayName("getAuthenticatedProfileUser - Should successfully return the authenticated user")
+  void getAuthenticatedUserProfileSuccess() {
+    UserPrincipal userPrincipal = new UserPrincipal(this.user);
+
+    when(this.authService.getAuthentication()).thenReturn(this.authentication);
+    when(this.authentication.getPrincipal()).thenReturn(userPrincipal);
+
+    User authenticatedUser = this.userService.getAuthenticatedUserProfile();
+
+    assertThat(authenticatedUser.getId()).isEqualTo(this.user.getId());
+    assertThat(authenticatedUser.getName()).isEqualTo(this.user.getName());
+    assertThat(authenticatedUser.getEmail()).isEqualTo(this.user.getEmail());
+    assertThat(authenticatedUser.getCreatedAt()).isEqualTo(this.user.getCreatedAt());
+    assertThat(authenticatedUser.getUpdatedAt()).isEqualTo(this.user.getUpdatedAt());
+
+    verify(this.authService, times(1)).getAuthentication();
+    verify(this.authentication, times(1)).getPrincipal();
   }
 }
