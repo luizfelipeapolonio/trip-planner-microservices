@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -154,5 +155,64 @@ public class UserControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.userService, times(1)).update(userId, updateDTO);
+  }
+
+  @Test
+  @DisplayName("deleteAuthenticatedUserProfile - Should return a success response with ok status code and the deleted user")
+  void deleteAuthenticatedUserProfileSuccess() throws Exception {
+    when(this.userService.deleteAuthenticatedUserProfile()).thenReturn(this.user);
+
+    this.mockMvc.perform(delete(BASE_URL + "/me").accept(MediaType.APPLICATION_JSON))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Usuário excluído com sucesso"))
+      .andExpect(jsonPath("$.data.deletedUser.id").value(this.user.getId().toString()))
+      .andExpect(jsonPath("$.data.deletedUser.name").value(this.user.getName()))
+      .andExpect(jsonPath("$.data.deletedUser.email").value(this.user.getEmail()))
+      .andExpect(jsonPath("$.data.deletedUser.password").doesNotExist())
+      .andExpect(jsonPath("$.data.deletedUser.createdAt").value(this.user.getCreatedAt().toString()))
+      .andExpect(jsonPath("$.data.deletedUser.updatedAt").value(this.user.getUpdatedAt().toString()));
+
+    verify(this.userService, times(1)).deleteAuthenticatedUserProfile();
+  }
+
+  @Test
+  @DisplayName("getProfile - Should return a success response with ok status code and the user profile")
+  void getProfileSuccess() throws Exception {
+    UUID userId = this.user.getId();
+
+    when(this.userService.getProfile(userId)).thenReturn(this.user);
+
+    this.mockMvc.perform(get(BASE_URL + "/62dac895-a1f0-4140-b52b-4c12cb82c6ff")
+      .accept(MediaType.APPLICATION_JSON))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id").value(this.user.getId().toString()))
+      .andExpect(jsonPath("$.name").value(this.user.getName()))
+      .andExpect(jsonPath("$.email").value(this.user.getEmail()))
+      .andExpect(jsonPath("$.password").doesNotExist())
+      .andExpect(jsonPath("$.createdAt").value(this.user.getCreatedAt().toString()))
+      .andExpect(jsonPath("$.updatedAt").value(this.user.getUpdatedAt().toString()));
+
+    verify(this.userService, times(1)).getProfile(userId);
+  }
+
+  @Test
+  @DisplayName("getProfile - Should return an error response with not found status code")
+  void getProfileFailsByUserNotFound() throws Exception {
+    UUID userId = this.user.getId();
+
+    when(this.userService.getProfile(userId))
+      .thenThrow(new RecordNotFoundException("Usuário de id: '" + userId + "' não encontrado"));
+
+    this.mockMvc.perform(get(BASE_URL + "/62dac895-a1f0-4140-b52b-4c12cb82c6ff")
+      .accept(MediaType.APPLICATION_JSON))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Usuário de id: '62dac895-a1f0-4140-b52b-4c12cb82c6ff' não encontrado"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.userService, times(1)).getProfile(userId);
   }
 }

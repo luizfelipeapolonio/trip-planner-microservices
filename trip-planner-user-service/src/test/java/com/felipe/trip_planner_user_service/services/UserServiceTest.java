@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -234,6 +235,41 @@ public class UserServiceTest {
   }
 
   @Test
+  @DisplayName("getProfile - Should successfully find the user with the given id and return it")
+  void getProfileSuccess() {
+    UUID userId = this.user.getId();
+
+    when(this.userRepository.findById(userId)).thenReturn(Optional.of(this.user));
+
+    User foundUser = this.userService.getProfile(userId);
+
+    assertThat(foundUser.getId()).isEqualTo(this.user.getId());
+    assertThat(foundUser.getName()).isEqualTo(this.user.getName());
+    assertThat(foundUser.getEmail()).isEqualTo(this.user.getEmail());
+    assertThat(foundUser.getPassword()).isEqualTo(this.user.getPassword());
+    assertThat(foundUser.getCreatedAt()).isEqualTo(this.user.getCreatedAt());
+    assertThat(foundUser.getUpdatedAt()).isEqualTo(this.user.getUpdatedAt());
+
+    verify(this.userRepository, times(1)).findById(userId);
+  }
+
+  @Test
+  @DisplayName("getProfile - Should throw a RecordNotFoundException if the user is not found")
+  void getProfileFailsByUserNotFound() {
+    UUID userId = UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35");
+
+    when(this.userRepository.findById(userId)).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.userService.getProfile(userId));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Usuário de id: '%s' não encontrado", userId);
+
+    verify(this.userRepository, times(1)).findById(userId);
+  }
+
+  @Test
   @DisplayName("update - Should successfully update a user and return it")
   void updateSuccess() {
     UserPrincipal userPrincipal = new UserPrincipal(this.user);
@@ -306,5 +342,28 @@ public class UserServiceTest {
     verify(this.userRepository, times(1)).findById(userId);
     verify(this.passwordEncoder, never()).encode(anyString());
     verify(this.userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("deleteAuthenticatedUserProfile - Should successfully delete the authenticated user and return it")
+  void deleteAuthenticatedUserProfileSuccess() {
+    UserPrincipal userPrincipal = new UserPrincipal(this.user);
+
+    when(this.authService.getAuthentication()).thenReturn(this.authentication);
+    when(this.authentication.getPrincipal()).thenReturn(userPrincipal);
+    doNothing().when(this.userRepository).deleteById(this.user.getId());
+
+    User deletedUser = this.userService.deleteAuthenticatedUserProfile();
+
+    assertThat(deletedUser.getId()).isEqualTo(this.user.getId());
+    assertThat(deletedUser.getName()).isEqualTo(this.user.getName());
+    assertThat(deletedUser.getEmail()).isEqualTo(this.user.getEmail());
+    assertThat(deletedUser.getPassword()).isEqualTo(this.user.getPassword());
+    assertThat(deletedUser.getCreatedAt()).isEqualTo(this.user.getCreatedAt());
+    assertThat(deletedUser.getUpdatedAt()).isEqualTo(this.user.getUpdatedAt());
+
+    verify(this.authService, times(1)).getAuthentication();
+    verify(this.authentication, times(1)).getPrincipal();
+    verify(this.userRepository, times(1)).deleteById(this.user.getId());
   }
 }
