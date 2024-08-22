@@ -93,6 +93,11 @@ public class UserService {
     return userPrincipal.getUser();
   }
 
+  public User getProfile(UUID userId) {
+    return this.userRepository.findById(userId)
+      .orElseThrow(() -> new RecordNotFoundException("Usuário de id: '" + userId + "' não encontrado"));
+  }
+
   public User update(UUID userId, UserUpdateDTO updateDTO) {
     Authentication authentication = this.authService.getAuthentication();
     UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
@@ -113,5 +118,13 @@ public class UserService {
         return this.userRepository.save(foundUser);
       })
       .orElseThrow(() -> new RecordNotFoundException("Usuário de id: '" + userId + "' não encontrado"));
+  }
+
+  public User deleteAuthenticatedUserProfile() {
+    Authentication authentication = this.authService.getAuthentication();
+    UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+    User authenticatedUser = userPrincipal.getUser();
+    this.userRepository.deleteById(authenticatedUser.getId());
+    return authenticatedUser;
   }
 }

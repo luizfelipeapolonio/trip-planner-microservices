@@ -8,6 +8,7 @@ import com.felipe.trip_planner_user_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_user_service.utils.response.ResponseConditionStatus;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -42,6 +45,23 @@ public class UserController {
     return response;
   }
 
+  @DeleteMapping("/me")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Map<String, UserResponseDTO>> deleteAuthenticatedUserProfile() {
+    User deletedUser = this.userService.deleteAuthenticatedUserProfile();
+    UserResponseDTO deletedUserDTO = new UserResponseDTO(deletedUser);
+
+    Map<String, UserResponseDTO> deletedUserMap = new HashMap<>(1);
+    deletedUserMap.put("deletedUser", deletedUserDTO);
+
+    CustomResponseBody<Map<String, UserResponseDTO>> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Usuário excluído com sucesso");
+    response.setData(deletedUserMap);
+    return response;
+  }
+
   @PutMapping("/{userId}")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<UserResponseDTO> update(@PathVariable UUID userId, @RequestBody @Valid UserUpdateDTO updateDTO) {
@@ -54,5 +74,13 @@ public class UserController {
     response.setMessage("Usuário atualizado com sucesso");
     response.setData(userResponseDTO);
     return response;
+  }
+
+  // An endpoint for internal calls from microservices to get a user profile
+  @GetMapping("/{userId}")
+  @ResponseStatus(HttpStatus.OK)
+  public UserResponseDTO getProfile(@PathVariable UUID userId) {
+    User foundUser = this.userService.getProfile(userId);
+    return new UserResponseDTO(foundUser);
   }
 }
