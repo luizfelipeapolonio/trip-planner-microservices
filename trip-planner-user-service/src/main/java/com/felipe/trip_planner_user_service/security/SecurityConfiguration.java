@@ -2,6 +2,7 @@ package com.felipe.trip_planner_user_service.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -30,6 +31,7 @@ public class SecurityConfiguration {
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(authorize -> authorize
         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/validate").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/users/{userId}").permitAll()
         .anyRequest().authenticated())
       .addFilterBefore(this.securityFilter, UsernamePasswordAuthenticationFilter.class)
       .build();
