@@ -17,6 +17,14 @@ spring:
             - PrefixPath=/api
             - AuthenticationFilter
 
+        - id: trip-planner-trip-service
+          uri: lb://TRIP-PLANNER-TRIP-SERVICE
+          predicates:
+            - Path=/trips/**
+          filters:
+            - PrefixPath=/api
+            - AuthenticationFilter
+
 server:
   port: 8080
 
