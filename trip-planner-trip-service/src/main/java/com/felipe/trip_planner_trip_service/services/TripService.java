@@ -7,6 +7,9 @@ import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -36,6 +39,11 @@ public class TripService {
     newTrip.setEndsAt(tripDates.get("endsAt"));
 
     return this.tripRepository.save(newTrip);
+  }
+
+  public Page<Trip> getAllTripsFromAuthUser(String ownerEmail, int pageNumber) {
+    Pageable pagination = PageRequest.of(pageNumber, 10);
+    return this.tripRepository.findAllByOwnerEmail(ownerEmail, pagination);
   }
 
   private Map<String, LocalDate> convertAndValidateDate(TripDateDTO startsAt, TripDateDTO endsAt) {
