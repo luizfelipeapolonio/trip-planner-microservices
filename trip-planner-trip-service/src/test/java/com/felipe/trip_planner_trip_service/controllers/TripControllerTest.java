@@ -3,10 +3,12 @@ package com.felipe.trip_planner_trip_service.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.TripService;
+import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -25,12 +29,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -49,7 +56,7 @@ public class TripControllerTest {
   @MockBean
   TripService tripService;
 
-  private Trip trip;
+  private List<Trip> trips;
   private final String BASE_URL = "/api/trips";
 
   @BeforeEach
@@ -68,19 +75,40 @@ public class TripControllerTest {
     trip.setCreatedAt(mockDateTime);
     trip.setUpdatedAt(mockDateTime);
 
-    this.trip = trip;
+    Trip trip2 = new Trip();
+    trip2.setId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
+    trip2.setDestination("Destino 2");
+    trip2.setOwnerName("User 1");
+    trip2.setOwnerEmail("user1@email.com");
+    trip2.setStartsAt(LocalDate.parse("02-08-2024", formatter));
+    trip2.setEndsAt(LocalDate.parse("05-08-2024", formatter));
+    trip2.setCreatedAt(mockDateTime);
+    trip2.setUpdatedAt(mockDateTime);
+
+    Trip trip3 = new Trip();
+    trip3.setId(UUID.fromString("5f1b0d11-07a6-4a63-a5bf-381a09a784af"));
+    trip3.setDestination("Destino 3");
+    trip3.setOwnerName("User 2");
+    trip3.setOwnerEmail("user2@email.com");
+    trip3.setStartsAt(LocalDate.parse("02-08-2024", formatter));
+    trip3.setEndsAt(LocalDate.parse("05-08-2024", formatter));
+    trip3.setCreatedAt(mockDateTime);
+    trip3.setUpdatedAt(mockDateTime);
+
+    this.trips = List.of(trip, trip2, trip3);
   }
 
   @Test
   @DisplayName("create - Should return a success response with created status code and the created trip")
   void createSuccess() throws Exception {
+    Trip trip = trips.get(0);
     TripDateDTO startsAt = new TripDateDTO("24", "08", "2024");
     TripDateDTO endsAt = new TripDateDTO("26", "08", "2024");
     TripCreateDTO tripDTO = new TripCreateDTO("Destino 1", startsAt, endsAt);
-    TripResponseDTO tripResponseDTO = new TripResponseDTO(this.trip);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
     String jsonBody = this.objectMapper.writeValueAsString(tripDTO);
 
-    when(this.tripService.create("User 1", "user1@email.com", tripDTO)).thenReturn(this.trip);
+    when(this.tripService.create("User 1", "user1@email.com", tripDTO)).thenReturn(trip);
 
     this.mockMvc.perform(post(BASE_URL)
       .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
@@ -127,5 +155,31 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.tripService, times(1)).create("User 1", "user1@email.com", tripDTO);
+  }
+
+  @Test
+  @DisplayName("getAllTripsFromAuthUser - Should return a success response with ok status code and all trips from authenticated user")
+  void getAllTripsFromAuthUserSuccess() throws Exception {
+    Page<Trip> trips = new PageImpl<>(List.of(this.trips.get(0), this.trips.get(1)));
+    List<TripResponseDTO> tripDTOs = trips.getContent().stream().map(TripResponseDTO::new).toList();
+    TripPageResponseDTO tripPageDTO = new TripPageResponseDTO(tripDTOs, trips.getTotalElements(), trips.getTotalPages());
+
+    CustomResponseBody<TripPageResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as viagens do usuário de email 'user1@email.com'");
+    response.setData(tripPageDTO);
+
+    String jsonResponseBody = this.objectMapper.writeValueAsString(response);
+
+    when(this.tripService.getAllTripsFromAuthUser("user1@email.com", 0)).thenReturn(trips);
+
+    this.mockMvc.perform(get(BASE_URL + "?page=0")
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(content().json(jsonResponseBody));
+
+    verify(this.tripService, times(1)).getAllTripsFromAuthUser("user1@email.com", 0);
   }
 }
