@@ -29,14 +29,20 @@ public class TripService {
   }
 
   public Trip create(String ownerName, String ownerEmail, TripCreateDTO tripDTO) {
-    Map<String, LocalDate> tripDates = this.convertAndValidateDate(tripDTO.startsAt(), tripDTO.endsAt());
+    LocalDate startDate = this.convertDate(tripDTO.startsAt());
+    LocalDate endDate = this.convertDate(tripDTO.endsAt());
+
+    if(endDate.isBefore(startDate)) {
+      logger.error("Data do término antes da data do início. startsAt: {} - endsAt: {}", startDate, endDate);
+      throw new InvalidDateException("A data de término da viagem não pode ser antes da data de início");
+    }
 
     Trip newTrip = new Trip();
     newTrip.setDestination(tripDTO.destination());
     newTrip.setOwnerEmail(ownerEmail);
     newTrip.setOwnerName(ownerName);
-    newTrip.setStartsAt(tripDates.get("startsAt"));
-    newTrip.setEndsAt(tripDates.get("endsAt"));
+    newTrip.setStartsAt(startDate);
+    newTrip.setEndsAt(endDate);
 
     return this.tripRepository.save(newTrip);
   }
@@ -46,25 +52,12 @@ public class TripService {
     return this.tripRepository.findAllByOwnerEmail(ownerEmail, pagination);
   }
 
-  private Map<String, LocalDate> convertAndValidateDate(TripDateDTO startsAt, TripDateDTO endsAt) {
-    String startDateString = startsAt.day() + "-" + startsAt.month() + "-" + startsAt.year();
-    String endDateString = endsAt.day() + "-" + endsAt.month() + "-" + endsAt.year();
+  private LocalDate convertDate(TripDateDTO date) {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    Map<String, LocalDate> tripDates = new HashMap<>(2);
+    String dateString = String.format("%s-%s-%s", date.day(), date.month(), date.year());
 
     try {
-      LocalDate startDate = LocalDate.parse(startDateString, formatter);
-      LocalDate endDate = LocalDate.parse(endDateString, formatter);
-
-      if(endDate.isBefore(startDate)) {
-        logger.error("Data do término antes da data do início. startsAt: {} - endsAt: {}", startDate, endDate);
-        throw new InvalidDateException("A data de término da viagem não pode ser antes da data de início");
-      }
-
-      tripDates.put("startsAt", startDate);
-      tripDates.put("endsAt", endDate);
-      return tripDates;
-
+      return LocalDate.parse(dateString, formatter);
     } catch(DateTimeParseException e) {
       logger.error("Falha ao converter data! Valor: {} \nMessage: {}", e.getParsedString(), e.getMessage());
       throw new InvalidDateException(
