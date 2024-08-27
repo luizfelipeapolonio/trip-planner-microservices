@@ -3,6 +3,7 @@ package com.felipe.trip_planner_trip_service.controllers;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
@@ -13,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/trips")
@@ -69,6 +73,25 @@ public class TripController {
     response.setCode(HttpStatus.OK);
     response.setMessage("Todas as viagens do usuário de email '" + ownerEmail + "'");
     response.setData(tripPageDTO);
+    return response;
+  }
+
+  @PatchMapping("/{tripId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<TripResponseDTO> update(
+    @RequestHeader("userEmail") String ownerEmail,
+    @PathVariable UUID tripId,
+    @RequestBody @Valid TripUpdateDTO tripDTO
+  ) {
+    logger.info("Request Header -> userEmail: {}", ownerEmail);
+    Trip updatedTrip = this.tripService.update(tripId, ownerEmail, tripDTO);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(updatedTrip);
+
+    CustomResponseBody<TripResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Viagem atualizada com sucesso");
+    response.setData(tripResponseDTO);
     return response;
   }
 }

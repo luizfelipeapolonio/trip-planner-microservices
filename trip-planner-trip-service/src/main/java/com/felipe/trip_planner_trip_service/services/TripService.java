@@ -2,7 +2,10 @@ package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import org.slf4j.Logger;
@@ -15,8 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class TripService {
@@ -50,6 +52,53 @@ public class TripService {
   public Page<Trip> getAllTripsFromAuthUser(String ownerEmail, int pageNumber) {
     Pageable pagination = PageRequest.of(pageNumber, 10);
     return this.tripRepository.findAllByOwnerEmail(ownerEmail, pagination);
+  }
+
+  public Trip update(UUID tripId, String ownerEmail, TripUpdateDTO tripDTO) {
+    return this.tripRepository.findById(tripId)
+      .map(foundTrip -> {
+        if(!foundTrip.getOwnerEmail().equals(ownerEmail)) {
+          throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
+        }
+        if(tripDTO.destination() != null) {
+          foundTrip.setDestination(tripDTO.destination());
+        }
+
+        // When only new startsAt date is provided
+        if(tripDTO.startsAt() != null && tripDTO.endsAt() == null) {
+          System.out.println("startsAt != null");
+          LocalDate newStartDate = this.convertDate(tripDTO.startsAt());
+          if(newStartDate.isAfter(foundTrip.getEndsAt())) {
+            throw new InvalidDateException("A data de início não pode ser depois da data do término");
+          }
+          foundTrip.setStartsAt(newStartDate);
+        }
+
+        // When only new endsAt date is provided
+        if(tripDTO.endsAt() != null && tripDTO.startsAt() == null) {
+          System.out.println("endsAt != null");
+          LocalDate newEndDate = this.convertDate(tripDTO.endsAt());
+          if(newEndDate.isBefore(foundTrip.getStartsAt())) {
+            throw new InvalidDateException("A data do término não pode ser antes da data do início");
+          }
+          foundTrip.setEndsAt(newEndDate);
+        }
+
+        // When both startsAt and endsAt is provided
+        if(tripDTO.startsAt() != null && tripDTO.endsAt() != null) {
+          System.out.println("startsAt != null && endsAt != null");
+          LocalDate newStartDate = this.convertDate(tripDTO.startsAt());
+          LocalDate newEndDate = this.convertDate(tripDTO.endsAt());
+
+          if(newEndDate.isBefore(newStartDate)) {
+            throw new InvalidDateException("A data do término não pode ser antes da data do início");
+          }
+          foundTrip.setStartsAt(newStartDate);
+          foundTrip.setEndsAt(newEndDate);
+        }
+        return this.tripRepository.save(foundTrip);
+      })
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
   }
 
   private LocalDate convertDate(TripDateDTO date) {

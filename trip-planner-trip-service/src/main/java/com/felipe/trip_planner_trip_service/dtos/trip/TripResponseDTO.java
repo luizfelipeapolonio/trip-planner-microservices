@@ -1,7 +1,7 @@
 package com.felipe.trip_planner_trip_service.dtos.trip;
 
 import com.felipe.trip_planner_trip_service.models.Trip;
-import com.felipe.trip_planner_trip_service.utils.response.ConvertDateFormat;
+import com.felipe.trip_planner_trip_service.utils.ConvertDateFormat;
 
 public record TripResponseDTO(
   String id,

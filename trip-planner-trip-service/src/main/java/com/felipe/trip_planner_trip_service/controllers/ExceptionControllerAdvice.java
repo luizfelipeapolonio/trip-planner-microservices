@@ -1,6 +1,8 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.CustomValidationErrors;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
@@ -26,6 +28,17 @@ public class ExceptionControllerAdvice {
     return response;
   }
 
+  @ExceptionHandler(RecordNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public CustomResponseBody<Void> handleRecordNotFoundException(RecordNotFoundException e) {
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.ERROR);
+    response.setCode(HttpStatus.NOT_FOUND);
+    response.setMessage(e.getMessage());
+    response.setData(null);
+    return response;
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
   public CustomResponseBody<List<CustomValidationErrors>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
@@ -44,6 +57,17 @@ public class ExceptionControllerAdvice {
     response.setCode(HttpStatus.UNPROCESSABLE_ENTITY);
     response.setMessage("Erros de validação");
     response.setData(errors);
+    return response;
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public CustomResponseBody<Void> handleAccessDeniedException(AccessDeniedException e) {
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.ERROR);
+    response.setCode(HttpStatus.FORBIDDEN);
+    response.setMessage(e.getMessage());
+    response.setData(null);
     return response;
   }
 

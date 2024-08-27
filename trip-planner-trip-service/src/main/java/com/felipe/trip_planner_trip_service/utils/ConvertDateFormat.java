@@ -1,4 +1,4 @@
-package com.felipe.trip_planner_trip_service.utils.response;
+package com.felipe.trip_planner_trip_service.utils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
