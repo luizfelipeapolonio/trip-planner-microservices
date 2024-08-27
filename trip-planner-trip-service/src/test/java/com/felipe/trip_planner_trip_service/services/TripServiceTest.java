@@ -2,7 +2,10 @@ package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.catchException;
@@ -153,5 +157,137 @@ public class TripServiceTest {
       .containsExactlyInAnyOrderElementsOf(trips.getContent().stream().map(Trip::getOwnerEmail).toList());
 
     verify(this.tripRepository, times(1)).findAllByOwnerEmail(ownerEmail, pagination);
+  }
+
+  @Test
+  @DisplayName("update - Should successfully update a trip and return it")
+  void updateSuccess() {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("01", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+    String newStartDateString = String.format("%s-%s-%s", newStartsAt.day(), newStartsAt.month(), newStartsAt.year());
+    String newEndDateString = String.format("%s-%s-%s", newEndsAt.day(), newEndsAt.month(), newEndsAt.year());
+
+    LocalDate newStartDate = LocalDate.parse(newStartDateString, formatter);
+    LocalDate newEndDate = LocalDate.parse(newEndDateString, formatter);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+    when(this.tripRepository.save(trip)).thenReturn(trip);
+
+    Trip updatedTrip = this.tripService.update(trip.getId(), "user1@email.com", tripDTO);
+
+    assertThat(updatedTrip.getId()).isEqualTo(trip.getId());
+    assertThat(updatedTrip.getDestination()).isEqualTo(tripDTO.destination());
+    assertThat(updatedTrip.getOwnerName()).isEqualTo(trip.getOwnerName());
+    assertThat(updatedTrip.getOwnerEmail()).isEqualTo(trip.getOwnerEmail());
+    assertThat(updatedTrip.getStartsAt()).isEqualTo(newStartDate);
+    assertThat(updatedTrip.getEndsAt()).isEqualTo(newEndDate);
+    assertThat(updatedTrip.isConfirmed()).isEqualTo(trip.isConfirmed());
+    assertThat(updatedTrip.getCreatedAt()).isEqualTo(trip.getCreatedAt());
+    assertThat(updatedTrip.getUpdatedAt()).isEqualTo(trip.getUpdatedAt());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, times(1)).save(trip);
+  }
+
+  @Test
+  @DisplayName("update - Should throw an AccessDeniedException if trip owner email is different from authenticated user email")
+  void updateFailsByAccessDenied() {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("01", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.update(trip.getId(), "user2@email.com", tripDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para alterar este recurso");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).save(any(Trip.class));
+  }
+
+  @Test
+  @DisplayName("update - Should throw an InvalidDateException if the new startsAt date is after the actual endsAt date")
+  void updateFailsByInvalidNewStartsAtDate() {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("27", "08", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, null);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.update(trip.getId(), "user1@email.com", tripDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(InvalidDateException.class)
+      .hasMessage("A data de início não pode ser depois da data do término");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).save(any(Trip.class));
+  }
+
+  @Test
+  @DisplayName("update - Should throw an InvalidDateException if the new endsAt date is before the actual startsAt date")
+  void updateFailsByInvalidNewEndsAtDate() {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newEndsAt = new TripDateDTO("23", "08", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", null, newEndsAt);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.update(trip.getId(), "user1@email.com", tripDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(InvalidDateException.class)
+      .hasMessage("A data do término não pode ser antes da data do início");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).save(any(Trip.class));
+  }
+
+  @Test
+  @DisplayName("update - Should throw an InvalidDateException if the new endsAt date is before the new startsAt date")
+  void updateFailsByBothInvalidNewStartsAtAndNewEndsAtDate() {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("03", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.update(trip.getId(), "user1@email.com", tripDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(InvalidDateException.class)
+      .hasMessage("A data do término não pode ser antes da data do início");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).save(any(Trip.class));
+  }
+
+  @Test
+  @DisplayName("update - Should throw a RecordNotFoundException if the trip is not found")
+  void updateFailsByTripNotFound() {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("01", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.tripService.update(trip.getId(), "user1@email.com", tripDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Viagem de id: '%s' não encontrada", trip.getId());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).save(any(Trip.class));
   }
 }

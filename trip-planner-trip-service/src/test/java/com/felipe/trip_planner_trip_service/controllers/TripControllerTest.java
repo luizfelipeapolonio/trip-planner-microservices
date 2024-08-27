@@ -5,7 +5,10 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
@@ -36,6 +39,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -181,5 +185,88 @@ public class TripControllerTest {
       .andExpect(content().json(jsonResponseBody));
 
     verify(this.tripService, times(1)).getAllTripsFromAuthUser("user1@email.com", 0);
+  }
+
+  @Test
+  @DisplayName("update - Should return a success response with ok status code and the updated trip")
+  void updateSuccess() throws Exception {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("01", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
+    String jsonBody = this.objectMapper.writeValueAsString(tripDTO);
+
+    when(this.tripService.update(trip.getId(), "user1@email.com", tripDTO)).thenReturn(trip);
+
+    this.mockMvc.perform(patch(BASE_URL + "/" + trip.getId())
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Viagem atualizada com sucesso"))
+      .andExpect(jsonPath("$.data.id").value(tripResponseDTO.id()))
+      .andExpect(jsonPath("$.data.destination").value(tripResponseDTO.destination()))
+      .andExpect(jsonPath("$.data.ownerName").value(tripResponseDTO.ownerName()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(tripResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.isConfirmed").value(tripResponseDTO.isConfirmed()))
+      .andExpect(jsonPath("$.data.startsAt").value(tripResponseDTO.startsAt()))
+      .andExpect(jsonPath("$.data.endsAt").value(tripResponseDTO.endsAt()))
+      .andExpect(jsonPath("$.data.createdAt").value(tripResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(tripResponseDTO.updatedAt()));
+
+    verify(this.tripService, times(1)).update(trip.getId(), "user1@email.com", tripDTO);
+  }
+
+  @Test
+  @DisplayName("update - Should return an error response with forbidden status code")
+  void updateFailsByAccessDenied() throws Exception {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("01", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+    String jsonBody = this.objectMapper.writeValueAsString(tripDTO);
+
+    when(this.tripService.update(trip.getId(), "user2@email.com", tripDTO))
+      .thenThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso"));
+
+    this.mockMvc.perform(patch(BASE_URL + "/" + trip.getId())
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para alterar este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).update(trip.getId(), "user2@email.com", tripDTO);
+  }
+
+  @Test
+  @DisplayName("update - Should return an error response with not found status code")
+  void updateFailsByTripNotFound() throws Exception {
+    Trip trip = this.trips.get(0);
+    TripDateDTO newStartsAt = new TripDateDTO("01", "02", "2024");
+    TripDateDTO newEndsAt = new TripDateDTO("02", "02", "2024");
+    TripUpdateDTO tripDTO = new TripUpdateDTO("Updated destination", newStartsAt, newEndsAt);
+    String jsonBody = this.objectMapper.writeValueAsString(tripDTO);
+
+    when(this.tripService.update(trip.getId(), "user1@email.com", tripDTO))
+      .thenThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"));
+
+    this.mockMvc.perform(patch(BASE_URL + "/" + trip.getId())
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).update(trip.getId(), "user1@email.com", tripDTO);
   }
 }

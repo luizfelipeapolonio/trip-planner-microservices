@@ -1,6 +1,6 @@
 package com.felipe.trip_planner_trip_service.util.response;
 
-import com.felipe.trip_planner_trip_service.utils.response.ConvertDateFormat;
+import com.felipe.trip_planner_trip_service.utils.ConvertDateFormat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
