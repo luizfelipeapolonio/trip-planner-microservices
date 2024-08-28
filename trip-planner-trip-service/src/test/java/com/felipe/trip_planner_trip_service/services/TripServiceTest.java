@@ -403,4 +403,19 @@ public class TripServiceTest {
     verify(this.tripRepository, times(1)).findById(trip.getId());
     verify(this.tripRepository, never()).deleteById(any(UUID.class));
   }
+
+  @Test
+  @DisplayName("deleteAllFromAuthUser - Should successfully delete all authenticated user trips and return the quantity of deleted trips")
+  void deleteAllTripsFromAuthUserSuccess() {
+    List<Trip> allTrips = List.of(this.trips.get(0), this.trips.get(1));
+
+    when(this.tripRepository.findAllByOwnerEmail("user1@email.com")).thenReturn(allTrips);
+
+    int quantityOfDeletedTrips = this.tripService.deleteAllTripsFromAuthUser("user1@email.com");
+
+    assertThat(quantityOfDeletedTrips).isEqualTo(allTrips.size());
+
+    verify(this.tripRepository, times(1)).findAllByOwnerEmail("user1@email.com");
+    verify(this.tripRepository, times(1)).deleteAll(allTrips);
+  }
 }

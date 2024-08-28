@@ -406,4 +406,23 @@ public class TripControllerTest {
 
     verify(this.tripService, times(1)).delete(trip.getId(), "user1@email.com");
   }
+
+  @Test
+  @DisplayName("deleteAllTripsFromAuthUser - Should return a success response with ok status code and the quantity of deleted trips")
+  void deleteAllTripsFromAuthUserSuccess() throws Exception {
+    List<Trip> allTrips = List.of(this.trips.get(0), this.trips.get(1));
+
+    when(this.tripService.deleteAllTripsFromAuthUser("user1@email.com")).thenReturn(allTrips.size());
+
+    this.mockMvc.perform(delete(BASE_URL)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Todas as viagens do usuário de email: 'user1@email.com' foram excluídas com sucesso"))
+      .andExpect(jsonPath("$.data").value("Quantidade de viagens excluídas: " + allTrips.size()));
+
+    verify(this.tripService, times(1)).deleteAllTripsFromAuthUser("user1@email.com");
+  }
 }
