@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +25,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -110,6 +113,27 @@ public class TripController {
     response.setCode(HttpStatus.OK);
     response.setMessage("Viagem de id: '" + tripId + "' encontrada");
     response.setData(tripResponseDTO);
+    return response;
+  }
+
+  @DeleteMapping("/{tripId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Map<String, TripResponseDTO>> delete(
+    @RequestHeader("userEmail") String ownerEmail,
+    @PathVariable UUID tripId
+  ) {
+    logger.info("Request Header -> userEmail: {}", ownerEmail);
+    Trip deletedTrip = this.tripService.delete(tripId, ownerEmail);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(deletedTrip);
+
+    Map<String, TripResponseDTO> tripResponseMap = new HashMap<>(1);
+    tripResponseMap.put("deletedTrip", tripResponseDTO);
+
+    CustomResponseBody<Map<String, TripResponseDTO>> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Viagem de id: '" + tripId + "' excluída com sucesso");
+    response.setData(tripResponseMap);
     return response;
   }
 }

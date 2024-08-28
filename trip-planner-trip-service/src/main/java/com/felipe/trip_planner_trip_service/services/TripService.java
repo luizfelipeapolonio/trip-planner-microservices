@@ -65,6 +65,18 @@ public class TripService {
     return trip;
   }
 
+  public Trip delete(UUID tripId, String ownerEmail) {
+    Trip trip = this.tripRepository.findById(tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    if(!trip.getOwnerEmail().equals(ownerEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para excluir este recurso");
+    }
+
+    this.tripRepository.deleteById(trip.getId());
+    return trip;
+  }
+
   public Trip update(UUID tripId, String ownerEmail, TripUpdateDTO tripDTO) {
     return this.tripRepository.findById(tripId)
       .map(foundTrip -> {
