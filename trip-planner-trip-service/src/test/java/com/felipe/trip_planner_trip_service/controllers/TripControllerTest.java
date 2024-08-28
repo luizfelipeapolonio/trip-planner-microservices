@@ -269,4 +269,72 @@ public class TripControllerTest {
 
     verify(this.tripService, times(1)).update(trip.getId(), "user1@email.com", tripDTO);
   }
+
+  @Test
+  @DisplayName("getById - Should return a success response with ok status code and the found trip")
+  void getByIdSuccess() throws Exception {
+    Trip trip = this.trips.get(0);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
+
+    when(this.tripService.getById(trip.getId(), "user1@email.com")).thenReturn(trip);
+
+    this.mockMvc.perform(get(BASE_URL + "/" + trip.getId())
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' encontrada"))
+      .andExpect(jsonPath("$.data.id").value(tripResponseDTO.id()))
+      .andExpect(jsonPath("$.data.destination").value(tripResponseDTO.destination()))
+      .andExpect(jsonPath("$.data.ownerName").value(tripResponseDTO.ownerName()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(tripResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.isConfirmed").value(tripResponseDTO.isConfirmed()))
+      .andExpect(jsonPath("$.data.startsAt").value(tripResponseDTO.startsAt()))
+      .andExpect(jsonPath("$.data.endsAt").value(tripResponseDTO.endsAt()))
+      .andExpect(jsonPath("$.data.createdAt").value(tripResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(tripResponseDTO.updatedAt()));
+
+    verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("getById - Should return an error response with not found status code")
+  void getByIdFailsByTripNotFound() throws Exception {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripService.getById(trip.getId(), "user1@email.com"))
+      .thenThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"));
+
+    this.mockMvc.perform(get(BASE_URL + "/" + trip.getId())
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("getById - Should return an error response with forbidden status code")
+  void getByIdFailsByAccessDenied() throws Exception {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripService.getById(trip.getId(), "user1@email.com"))
+      .thenThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para acessar este recurso"));
+
+    this.mockMvc.perform(get(BASE_URL + "/" + trip.getId())
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para acessar este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+  }
 }

@@ -290,4 +290,58 @@ public class TripServiceTest {
     verify(this.tripRepository, times(1)).findById(trip.getId());
     verify(this.tripRepository, never()).save(any(Trip.class));
   }
+
+  @Test
+  @DisplayName("getById - Should successfully find a trip by id and return it")
+  void getByIdSuccess() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Trip foundTrip = this.tripService.getById(trip.getId(), "user1@email.com");
+
+    assertThat(foundTrip.getId()).isEqualTo(trip.getId());
+    assertThat(foundTrip.getDestination()).isEqualTo(trip.getDestination());
+    assertThat(foundTrip.getOwnerName()).isEqualTo(trip.getOwnerName());
+    assertThat(foundTrip.getOwnerEmail()).isEqualTo(trip.getOwnerEmail());
+    assertThat(foundTrip.isConfirmed()).isEqualTo(trip.isConfirmed());
+    assertThat(foundTrip.getStartsAt()).isEqualTo(trip.getStartsAt());
+    assertThat(foundTrip.getEndsAt()).isEqualTo(trip.getEndsAt());
+    assertThat(foundTrip.getCreatedAt()).isEqualTo(trip.getCreatedAt());
+    assertThat(foundTrip.getUpdatedAt()).isEqualTo(trip.getUpdatedAt());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("getById - Should throw an AccessDeniedException if the authenticated user is not the trip owner")
+  void getByIdFailsByAccessDenied() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.getById(trip.getId(), "user2@email.com"));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para acessar este recurso");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("update - Should throw a RecordNotFoundException if the trip is not found")
+  void getByIdFailsByTripNotFound() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.tripService.getById(trip.getId(), "user1@email.com"));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Viagem de id: '%s' não encontrada", trip.getId());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
 }
