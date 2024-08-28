@@ -94,4 +94,22 @@ public class TripController {
     response.setData(tripResponseDTO);
     return response;
   }
+
+  @GetMapping("/{tripId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<TripResponseDTO> getById(
+    @RequestHeader("userEmail") String ownerEmail,
+    @PathVariable UUID tripId
+  ) {
+    logger.info("Request Header -> userEmail: {}", ownerEmail);
+    Trip trip = this.tripService.getById(tripId, ownerEmail);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
+
+    CustomResponseBody<TripResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Viagem de id: '" + tripId + "' encontrada");
+    response.setData(tripResponseDTO);
+    return response;
+  }
 }

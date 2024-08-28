@@ -54,6 +54,17 @@ public class TripService {
     return this.tripRepository.findAllByOwnerEmail(ownerEmail, pagination);
   }
 
+  public Trip getById(UUID tripId, String ownerEmail) {
+    Trip trip = this.tripRepository.findById(tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    // TODO: verificar se o usuário autenticado é um participante da viagem
+    if(!trip.getOwnerEmail().equals(ownerEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para acessar este recurso");
+    }
+    return trip;
+  }
+
   public Trip update(UUID tripId, String ownerEmail, TripUpdateDTO tripDTO) {
     return this.tripRepository.findById(tripId)
       .map(foundTrip -> {
@@ -66,7 +77,6 @@ public class TripService {
 
         // When only new startsAt date is provided
         if(tripDTO.startsAt() != null && tripDTO.endsAt() == null) {
-          System.out.println("startsAt != null");
           LocalDate newStartDate = this.convertDate(tripDTO.startsAt());
           if(newStartDate.isAfter(foundTrip.getEndsAt())) {
             throw new InvalidDateException("A data de início não pode ser depois da data do término");
@@ -76,7 +86,6 @@ public class TripService {
 
         // When only new endsAt date is provided
         if(tripDTO.endsAt() != null && tripDTO.startsAt() == null) {
-          System.out.println("endsAt != null");
           LocalDate newEndDate = this.convertDate(tripDTO.endsAt());
           if(newEndDate.isBefore(foundTrip.getStartsAt())) {
             throw new InvalidDateException("A data do término não pode ser antes da data do início");
@@ -86,7 +95,6 @@ public class TripService {
 
         // When both startsAt and endsAt is provided
         if(tripDTO.startsAt() != null && tripDTO.endsAt() != null) {
-          System.out.println("startsAt != null && endsAt != null");
           LocalDate newStartDate = this.convertDate(tripDTO.startsAt());
           LocalDate newEndDate = this.convertDate(tripDTO.endsAt());
 
