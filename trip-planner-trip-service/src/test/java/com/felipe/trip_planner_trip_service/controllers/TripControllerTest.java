@@ -38,6 +38,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -336,5 +337,73 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("delete - Should return a success response with ok status code and the deleted trip")
+  void deleteSuccess() throws Exception {
+    Trip trip = this.trips.get(0);
+    TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
+
+    when(this.tripService.delete(trip.getId(), "user1@email.com")).thenReturn(trip);
+
+    this.mockMvc.perform(delete(BASE_URL + "/" + trip.getId())
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' excluída com sucesso"))
+      .andExpect(jsonPath("$.data.deletedTrip.id").value(tripResponseDTO.id()))
+      .andExpect(jsonPath("$.data.deletedTrip.destination").value(tripResponseDTO.destination()))
+      .andExpect(jsonPath("$.data.deletedTrip.ownerName").value(tripResponseDTO.ownerName()))
+      .andExpect(jsonPath("$.data.deletedTrip.ownerEmail").value(tripResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.deletedTrip.isConfirmed").value(tripResponseDTO.isConfirmed()))
+      .andExpect(jsonPath("$.data.deletedTrip.startsAt").value(tripResponseDTO.startsAt()))
+      .andExpect(jsonPath("$.data.deletedTrip.endsAt").value(tripResponseDTO.endsAt()))
+      .andExpect(jsonPath("$.data.deletedTrip.createdAt").value(tripResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.deletedTrip.updatedAt").value(tripResponseDTO.updatedAt()));
+
+    verify(this.tripService, times(1)).delete(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("delete - Should return an error response with not found status code")
+  void deleteFailsByTripNotFound() throws Exception {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripService.delete(trip.getId(), "user1@email.com"))
+      .thenThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"));
+
+    this.mockMvc.perform(delete(BASE_URL + "/" + trip.getId())
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).delete(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("delete - Should return an error response with forbidden status code")
+  void deleteFailsByAccessDenied() throws Exception {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripService.delete(trip.getId(), "user1@email.com"))
+      .thenThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para excluir este recurso"));
+
+    this.mockMvc.perform(delete(BASE_URL + "/" + trip.getId())
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para excluir este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).delete(trip.getId(), "user1@email.com");
   }
 }

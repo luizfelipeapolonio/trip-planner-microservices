@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.catchException;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -343,5 +344,63 @@ public class TripServiceTest {
       .hasMessage("Viagem de id: '%s' não encontrada", trip.getId());
 
     verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("delete - Should successfully delete a trip and return it")
+  void deleteSuccess() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+    doNothing().when(this.tripRepository).deleteById(trip.getId());
+
+    Trip deletedTrip = this.tripService.delete(trip.getId(), "user1@email.com");
+
+    assertThat(deletedTrip.getId()).isEqualTo(trip.getId());
+    assertThat(deletedTrip.getDestination()).isEqualTo(trip.getDestination());
+    assertThat(deletedTrip.getOwnerName()).isEqualTo(trip.getOwnerName());
+    assertThat(deletedTrip.getOwnerEmail()).isEqualTo(trip.getOwnerEmail());
+    assertThat(deletedTrip.isConfirmed()).isEqualTo(trip.isConfirmed());
+    assertThat(deletedTrip.getStartsAt()).isEqualTo(trip.getStartsAt());
+    assertThat(deletedTrip.getEndsAt()).isEqualTo(trip.getEndsAt());
+    assertThat(deletedTrip.getCreatedAt()).isEqualTo(trip.getCreatedAt());
+    assertThat(deletedTrip.getUpdatedAt()).isEqualTo(trip.getUpdatedAt());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, times(1)).deleteById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("delete - Should throw an AccessDeniedException if the given owner email is different from trip owner email")
+  void deleteFailsByAccessDenied() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.delete(trip.getId(), "user2@email.com"));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para excluir este recurso");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).deleteById(any(UUID.class));
+  }
+
+  @Test
+  @DisplayName("delete - Should throw a RecordNotFoundException if trip is not found")
+  void deleteFailsByTripNotFound() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.tripService.delete(trip.getId(), "user1@email.com"));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Viagem de id: '%s' não encontrada", trip.getId());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+    verify(this.tripRepository, never()).deleteById(any(UUID.class));
   }
 }
