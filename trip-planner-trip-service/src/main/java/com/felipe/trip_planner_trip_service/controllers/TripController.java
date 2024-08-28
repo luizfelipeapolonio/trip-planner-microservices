@@ -79,6 +79,20 @@ public class TripController {
     return response;
   }
 
+  @DeleteMapping
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<String> deleteAllTripsFromAuthUser(@RequestHeader("userEmail") String ownerEmail) {
+    logger.info("Request Headers -> userEmail: {}", ownerEmail);
+    int quantityOfDeletedTrips = this.tripService.deleteAllTripsFromAuthUser(ownerEmail);
+
+    CustomResponseBody<String> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as viagens do usuário de email: '" + ownerEmail + "' foram excluídas com sucesso");
+    response.setData("Quantidade de viagens excluídas: " + quantityOfDeletedTrips);
+    return response;
+  }
+
   @PatchMapping("/{tripId}")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<TripResponseDTO> update(

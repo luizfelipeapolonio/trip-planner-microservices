@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -75,6 +76,12 @@ public class TripService {
 
     this.tripRepository.deleteById(trip.getId());
     return trip;
+  }
+
+  public int deleteAllTripsFromAuthUser(String ownerEmail) {
+    List<Trip> allTrips = this.tripRepository.findAllByOwnerEmail(ownerEmail);
+    this.tripRepository.deleteAll(allTrips);
+    return allTrips.size();
   }
 
   public Trip update(UUID tripId, String ownerEmail, TripUpdateDTO tripDTO) {
