@@ -84,6 +84,30 @@ public class TripService {
     return allTrips.size();
   }
 
+  public void confirmTrip(UUID tripId, String ownerEmail) {
+    Trip trip = this.tripRepository.findById(tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    if(!trip.getOwnerEmail().equals(ownerEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
+    }
+
+    trip.setIsConfirmed(true);
+    this.tripRepository.save(trip);
+  }
+
+  public void cancelTrip(UUID tripId, String ownerEmail) {
+    Trip trip = this.tripRepository.findById(tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    if(!trip.getOwnerEmail().equals(ownerEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
+    }
+
+    trip.setIsConfirmed(false);
+    this.tripRepository.save(trip);
+  }
+
   public Trip update(UUID tripId, String ownerEmail, TripUpdateDTO tripDTO) {
     return this.tripRepository.findById(tripId)
       .map(foundTrip -> {

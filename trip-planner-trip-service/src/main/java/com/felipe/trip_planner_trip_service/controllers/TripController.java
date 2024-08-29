@@ -150,4 +150,32 @@ public class TripController {
     response.setData(tripResponseMap);
     return response;
   }
+
+  @PatchMapping("/{tripId}/confirm")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Void> confirmTrip(@RequestHeader("userEmail") String ownerEmail, @PathVariable UUID tripId) {
+    logger.info("Request Header -> userEmail: {}", ownerEmail);
+    this.tripService.confirmTrip(tripId, ownerEmail);
+
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("A viagem de id: '" + tripId + "' foi confirmada com sucesso");
+    response.setData(null);
+    return response;
+  }
+
+  @PatchMapping("/{tripId}/cancel")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Void> cancelTrip(@RequestHeader("userEmail") String ownerEmail, @PathVariable UUID tripId) {
+    logger.info("Request Header -> userEmail: {}", ownerEmail);
+    this.tripService.cancelTrip(tripId, ownerEmail);
+
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("A viagem de id: '" + tripId + "' foi cancelada com sucesso");
+    response.setData(null);
+    return response;
+  }
 }
