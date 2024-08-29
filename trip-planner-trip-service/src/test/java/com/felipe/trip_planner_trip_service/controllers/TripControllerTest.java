@@ -35,6 +35,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -424,5 +426,129 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").value("Quantidade de viagens excluídas: " + allTrips.size()));
 
     verify(this.tripService, times(1)).deleteAllTripsFromAuthUser("user1@email.com");
+  }
+
+  @Test
+  @DisplayName("confirmTrip - Should return a success response with ok status code")
+  void confirmTripTrueSuccess() throws Exception {
+    Trip trip = this.trips.get(0);
+    String url = String.format("%s/%s/confirm", BASE_URL, trip.getId());
+
+    doNothing().when(this.tripService).confirmTrip(trip.getId(), "user1@email.com");
+
+    this.mockMvc.perform(patch(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("A viagem de id: '" + trip.getId() + "' foi confirmada com sucesso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).confirmTrip(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("confirmTrip - Should return an error response with forbidden status code")
+  void confirmTripFailsByAccessDenied() throws Exception {
+    Trip trip = this.trips.get(0);
+    String url = String.format("%s/%s/confirm", BASE_URL, trip.getId());
+
+    doThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso"))
+      .when(this.tripService).confirmTrip(trip.getId(), "user1@email.com");
+
+    this.mockMvc.perform(patch(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para alterar este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).confirmTrip(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("confirmTrip - Should return an error response with not found status code")
+  void confirmTripFailsByTripNotFound() throws Exception {
+    Trip trip = this.trips.get(0);
+    String url = String.format("%s/%s/confirm", BASE_URL, trip.getId());
+
+    doThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .when(this.tripService).confirmTrip(trip.getId(), "user1@email.com");
+
+    this.mockMvc.perform(patch(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).confirmTrip(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("cancelTrip - Should return a success response with ok status code")
+  void cancelTripSuccess() throws Exception {
+    Trip trip = this.trips.get(0);
+    String url = String.format("%s/%s/cancel", BASE_URL, trip.getId());
+
+    doNothing().when(this.tripService).cancelTrip(trip.getId(), "user1@email.com");
+
+    this.mockMvc.perform(patch(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("A viagem de id: '" + trip.getId() + "' foi cancelada com sucesso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).cancelTrip(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("cancelTrip - Should throw an error response with forbidden status code")
+  void cancelTripFailsByAccessDenied() throws Exception {
+    Trip trip = this.trips.get(0);
+    String url = String.format("%s/%s/cancel", BASE_URL, trip.getId());
+
+    doThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso"))
+      .when(this.tripService).cancelTrip(trip.getId(), "user1@email.com");
+
+    this.mockMvc.perform(patch(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para alterar este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).cancelTrip(trip.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("cancelTrip - Should return an error response with not found status code")
+  void cancelTripFailsByTripNotFound() throws Exception {
+    Trip trip = this.trips.get(0);
+    String url = String.format("%s/%s/cancel", BASE_URL, trip.getId());
+
+    doThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .when(this.tripService).cancelTrip(trip.getId(), "user1@email.com");
+
+    this.mockMvc.perform(patch(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.tripService, times(1)).cancelTrip(trip.getId(), "user1@email.com");
   }
 }
