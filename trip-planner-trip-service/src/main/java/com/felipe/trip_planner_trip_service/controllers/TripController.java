@@ -155,7 +155,7 @@ public class TripController {
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<Void> confirmTrip(@RequestHeader("userEmail") String ownerEmail, @PathVariable UUID tripId) {
     logger.info("Request Header -> userEmail: {}", ownerEmail);
-    this.tripService.confirmTrip(tripId, ownerEmail);
+    this.tripService.confirmOrCancelTrip(tripId, ownerEmail, true);
 
     CustomResponseBody<Void> response = new CustomResponseBody<>();
     response.setStatus(ResponseConditionStatus.SUCCESS);
@@ -169,7 +169,7 @@ public class TripController {
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<Void> cancelTrip(@RequestHeader("userEmail") String ownerEmail, @PathVariable UUID tripId) {
     logger.info("Request Header -> userEmail: {}", ownerEmail);
-    this.tripService.cancelTrip(tripId, ownerEmail);
+    this.tripService.confirmOrCancelTrip(tripId, ownerEmail, false);
 
     CustomResponseBody<Void> response = new CustomResponseBody<>();
     response.setStatus(ResponseConditionStatus.SUCCESS);

@@ -84,7 +84,7 @@ public class TripService {
     return allTrips.size();
   }
 
-  public void confirmTrip(UUID tripId, String ownerEmail) {
+  public void confirmOrCancelTrip(UUID tripId, String ownerEmail, boolean isConfirmed) {
     Trip trip = this.tripRepository.findById(tripId)
       .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
 
@@ -92,19 +92,7 @@ public class TripService {
       throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
     }
 
-    trip.setIsConfirmed(true);
-    this.tripRepository.save(trip);
-  }
-
-  public void cancelTrip(UUID tripId, String ownerEmail) {
-    Trip trip = this.tripRepository.findById(tripId)
-      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
-
-    if(!trip.getOwnerEmail().equals(ownerEmail)) {
-      throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
-    }
-
-    trip.setIsConfirmed(false);
+    trip.setIsConfirmed(isConfirmed);
     this.tripRepository.save(trip);
   }
 
