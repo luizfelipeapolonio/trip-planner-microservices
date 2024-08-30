@@ -421,8 +421,8 @@ public class TripServiceTest {
   }
 
   @Test
-  @DisplayName("confirmTrip - Should successfully confirm a trip")
-  void confirmTripSuccess() {
+  @DisplayName("confirmOrCancelTrip - Should successfully confirm a trip")
+  void confirmOrCancelTripConfirmSuccess() {
     Trip trip = this.trips.get(0);
     trip.setIsConfirmed(false);
 
@@ -431,7 +431,7 @@ public class TripServiceTest {
     when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
     when(this.tripRepository.save(tripCapture.capture())).thenReturn(any(Trip.class));
 
-    this.tripService.confirmTrip(trip.getId(), "user1@email.com");
+    this.tripService.confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
 
     assertThat(tripCapture.getValue().isConfirmed()).isTrue();
 
@@ -440,42 +440,8 @@ public class TripServiceTest {
   }
 
   @Test
-  @DisplayName("confirmTrip - Should throw a RecordNotFoundException if the trip is not found")
-  void confirmTripFailsByTripNotFound() {
-    Trip trip = this.trips.get(0);
-
-    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.empty());
-
-    Exception thrown = catchException(() -> this.tripService.confirmTrip(trip.getId(), "user1@email.com"));
-
-    assertThat(thrown)
-      .isExactlyInstanceOf(RecordNotFoundException.class)
-      .hasMessage("Viagem de id: '%s' não encontrada", trip.getId());
-
-    verify(this.tripRepository, times(1)).findById(trip.getId());
-    verify(this.tripRepository, never()).save(any(Trip.class));
-  }
-
-  @Test
-  @DisplayName("confirmTrip - Should throw an AccessDeniedException if the given owner email is different from trip owner email")
-  void confirmTripFailsByAccessDenied() {
-    Trip trip = this.trips.get(0);
-
-    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
-
-    Exception thrown = catchException(() -> this.tripService.confirmTrip(trip.getId(), "user2@email.com"));
-
-    assertThat(thrown)
-      .isExactlyInstanceOf(AccessDeniedException.class)
-      .hasMessage("Acesso negado: Você não tem permissão para alterar este recurso");
-
-    verify(this.tripRepository, times(1)).findById(trip.getId());
-    verify(this.tripRepository, never()).save(any(Trip.class));
-  }
-
-  @Test
-  @DisplayName("cancelTrip - Should successfully cancel a trip")
-  void cancelTripSuccess() {
+  @DisplayName("confirmOrCancelTrip - Should successfully cancel a trip")
+  void confirmOrCancelTripCancelSuccess() {
     Trip trip = this.trips.get(0);
     trip.setIsConfirmed(true);
 
@@ -484,7 +450,7 @@ public class TripServiceTest {
     when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
     when(this.tripRepository.save(tripCapture.capture())).thenReturn(any(Trip.class));
 
-    this.tripService.cancelTrip(trip.getId(), "user1@email.com");
+    this.tripService.confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
 
     assertThat(tripCapture.getValue().isConfirmed()).isFalse();
 
@@ -493,13 +459,13 @@ public class TripServiceTest {
   }
 
   @Test
-  @DisplayName("cancelTrip - Should throw a RecordNotFoundException if the trip is not found")
-  void cancelTripFailsByTripNotFound() {
+  @DisplayName("confirmOrCancelTrip - Should throw a RecordNotFoundException if the trip is not found")
+  void confirmOrCancelTripFailsByTripNotFound() {
     Trip trip = this.trips.get(0);
 
     when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.empty());
 
-    Exception thrown = catchException(() -> this.tripService.cancelTrip(trip.getId(), "user1@email.com"));
+    Exception thrown = catchException(() -> this.tripService.confirmOrCancelTrip(trip.getId(), "user1@email.com", true));
 
     assertThat(thrown)
       .isExactlyInstanceOf(RecordNotFoundException.class)
@@ -510,13 +476,13 @@ public class TripServiceTest {
   }
 
   @Test
-  @DisplayName("cancelTrip - Should throw an AccessDeniedException if the given owner email is different from trip owner email")
-  void cancelTripFailsByAccessDenied() {
+  @DisplayName("confirmOrCancelTrip - Should throw an AccessDeniedException if the given owner email is different from trip owner email")
+  void confirmOrCancelTripFailsByAccessDenied() {
     Trip trip = this.trips.get(0);
 
     when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
 
-    Exception thrown = catchException(() -> this.tripService.cancelTrip(trip.getId(), "user2@email.com"));
+    Exception thrown = catchException(() -> this.tripService.confirmOrCancelTrip(trip.getId(), "user2@email.com", true));
 
     assertThat(thrown)
       .isExactlyInstanceOf(AccessDeniedException.class)

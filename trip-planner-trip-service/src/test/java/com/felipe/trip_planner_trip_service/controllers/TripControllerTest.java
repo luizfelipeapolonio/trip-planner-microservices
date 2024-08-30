@@ -434,7 +434,7 @@ public class TripControllerTest {
     Trip trip = this.trips.get(0);
     String url = String.format("%s/%s/confirm", BASE_URL, trip.getId());
 
-    doNothing().when(this.tripService).confirmTrip(trip.getId(), "user1@email.com");
+    doNothing().when(this.tripService).confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
 
     this.mockMvc.perform(patch(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -445,7 +445,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("A viagem de id: '" + trip.getId() + "' foi confirmada com sucesso"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.tripService, times(1)).confirmTrip(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
   }
 
   @Test
@@ -455,7 +455,7 @@ public class TripControllerTest {
     String url = String.format("%s/%s/confirm", BASE_URL, trip.getId());
 
     doThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso"))
-      .when(this.tripService).confirmTrip(trip.getId(), "user1@email.com");
+      .when(this.tripService).confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
 
     this.mockMvc.perform(patch(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -466,7 +466,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para alterar este recurso"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.tripService, times(1)).confirmTrip(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
   }
 
   @Test
@@ -476,7 +476,7 @@ public class TripControllerTest {
     String url = String.format("%s/%s/confirm", BASE_URL, trip.getId());
 
     doThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"))
-      .when(this.tripService).confirmTrip(trip.getId(), "user1@email.com");
+      .when(this.tripService).confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
 
     this.mockMvc.perform(patch(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -487,7 +487,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.tripService, times(1)).confirmTrip(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", true);
   }
 
   @Test
@@ -496,7 +496,7 @@ public class TripControllerTest {
     Trip trip = this.trips.get(0);
     String url = String.format("%s/%s/cancel", BASE_URL, trip.getId());
 
-    doNothing().when(this.tripService).cancelTrip(trip.getId(), "user1@email.com");
+    doNothing().when(this.tripService).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
 
     this.mockMvc.perform(patch(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -507,7 +507,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("A viagem de id: '" + trip.getId() + "' foi cancelada com sucesso"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.tripService, times(1)).cancelTrip(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
   }
 
   @Test
@@ -517,7 +517,7 @@ public class TripControllerTest {
     String url = String.format("%s/%s/cancel", BASE_URL, trip.getId());
 
     doThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso"))
-      .when(this.tripService).cancelTrip(trip.getId(), "user1@email.com");
+      .when(this.tripService).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
 
     this.mockMvc.perform(patch(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -528,7 +528,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para alterar este recurso"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.tripService, times(1)).cancelTrip(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
   }
 
   @Test
@@ -538,7 +538,7 @@ public class TripControllerTest {
     String url = String.format("%s/%s/cancel", BASE_URL, trip.getId());
 
     doThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"))
-      .when(this.tripService).cancelTrip(trip.getId(), "user1@email.com");
+      .when(this.tripService).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
 
     this.mockMvc.perform(patch(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -549,6 +549,6 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.tripService, times(1)).cancelTrip(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
   }
 }
