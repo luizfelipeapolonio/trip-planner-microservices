@@ -6,6 +6,6 @@ CREATE TABLE trips (
     is_confirmed BOOLEAN      NOT NULL DEFAULT TRUE,
     starts_at    DATE         NOT NULL,
     ends_at      DATE         NOT NULL,
-    created_at   TIMESTAMP    NOT NULL,
+    created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP    NOT NULL
 );
