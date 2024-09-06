@@ -1,10 +1,12 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
+import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.models.Trip;
+import com.felipe.trip_planner_trip_service.services.InviteService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
@@ -35,10 +37,12 @@ import java.util.UUID;
 public class TripController {
 
   private final TripService tripService;
+  private final InviteService inviteService;
   private final Logger logger = LoggerFactory.getLogger(TripController.class);
 
-  public TripController(TripService tripService) {
+  public TripController(TripService tripService, InviteService inviteService) {
     this.tripService = tripService;
+    this.inviteService = inviteService;
   }
 
   @PostMapping
@@ -175,6 +179,24 @@ public class TripController {
     response.setStatus(ResponseConditionStatus.SUCCESS);
     response.setCode(HttpStatus.OK);
     response.setMessage("A viagem de id: '" + tripId + "' foi cancelada com sucesso");
+    response.setData(null);
+    return response;
+  }
+
+  @PostMapping("/{tripId}/invite")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Void> inviteParticipant(
+    @RequestHeader("userEmail") String ownerEmail,
+    @PathVariable UUID tripId,
+    @RequestBody InviteParticipantDTO inviteDTO
+  ) {
+    logger.info("Request Header -> userEmail: {}", ownerEmail);
+    String email = this.inviteService.invite(tripId, ownerEmail, inviteDTO);
+
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Convite enviado com sucesso para: " + email);
     response.setData(null);
     return response;
   }
