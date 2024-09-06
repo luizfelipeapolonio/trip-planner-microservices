@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
@@ -10,6 +11,7 @@ import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Trip;
+import com.felipe.trip_planner_trip_service.services.InviteService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
@@ -19,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -52,6 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles(value = "test")
 @ExtendWith(MockitoExtension.class)
 @AutoConfigureMockMvc(addFilters = false)
+@EnableAutoConfiguration(exclude = {KafkaAutoConfiguration.class})
 public class TripControllerTest {
 
   @Autowired
@@ -62,6 +67,9 @@ public class TripControllerTest {
 
   @MockBean
   TripService tripService;
+
+  @MockBean
+  InviteService inviteService;
 
   private List<Trip> trips;
   private final String BASE_URL = "/api/trips";
@@ -550,5 +558,79 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.tripService, times(1)).confirmOrCancelTrip(trip.getId(), "user1@email.com", false);
+  }
+
+  @Test
+  @DisplayName("inviteParticipant - Should return a success response with ok status code")
+  void inviteParticipantSuccess() throws Exception {
+    Trip trip = this.trips.get(0);
+    InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
+    String url = String.format("%s/%s/invite", BASE_URL, trip.getId());
+    String jsonBody = this.objectMapper.writeValueAsString(inviteDTO);
+
+    when(this.inviteService.invite(trip.getId(), "user1@email.com", inviteDTO)).thenReturn(inviteDTO.email());
+
+    this.mockMvc.perform(post(url)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Convite enviado com sucesso para: user2@email.com"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.inviteService, times(1)).invite(trip.getId(), "user1@email.com", inviteDTO);
+  }
+
+  @Test
+  @DisplayName("inviteParticipant - Should return an error response with not found status code")
+  void inviteParticipantFailsByTripNotFound() throws Exception {
+    Trip trip = this.trips.get(0);
+    InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
+    String url = String.format("%s/%s/invite", BASE_URL, trip.getId());
+    String jsonBody = this.objectMapper.writeValueAsString(inviteDTO);
+
+    when(this.inviteService.invite(trip.getId(), "user1@email.com", inviteDTO))
+      .thenThrow(new RecordNotFoundException("Viagem de id: '" + trip.getId() + "' não encontrada"));
+
+    this.mockMvc.perform(post(url)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.inviteService, times(1)).invite(trip.getId(), "user1@email.com", inviteDTO);
+  }
+
+  @Test
+  @DisplayName("inviteParticipant - Should return an error response with forbidden status code")
+  void inviteParticipantFailsByAccessDenied() throws Exception {
+    Trip trip = this.trips.get(0);
+    InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
+    String url = String.format("%s/%s/invite", BASE_URL, trip.getId());
+    String jsonBody = this.objectMapper.writeValueAsString(inviteDTO);
+
+    when(this.inviteService.invite(trip.getId(), "user1@email.com", inviteDTO))
+      .thenThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para acessar este recurso"));
+
+    this.mockMvc.perform(post(url)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath(".message").value("Acesso negado: Você não tem permissão para acessar este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.inviteService, times(1)).invite(trip.getId(), "user1@email.com", inviteDTO);
   }
 }
