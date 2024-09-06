@@ -8,6 +8,7 @@ import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
+import com.felipe.trip_planner_trip_service.utils.Actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -67,13 +68,7 @@ public class TripService {
   }
 
   public Trip delete(UUID tripId, String ownerEmail) {
-    Trip trip = this.tripRepository.findById(tripId)
-      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
-
-    if(!trip.getOwnerEmail().equals(ownerEmail)) {
-      throw new AccessDeniedException("Acesso negado: Você não tem permissão para excluir este recurso");
-    }
-
+    Trip trip = this.checkIfIsTripOwner(tripId, ownerEmail, Actions.DELETE);
     this.tripRepository.deleteById(trip.getId());
     return trip;
   }
@@ -85,13 +80,7 @@ public class TripService {
   }
 
   public void confirmOrCancelTrip(UUID tripId, String ownerEmail, boolean isConfirmed) {
-    Trip trip = this.tripRepository.findById(tripId)
-      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
-
-    if(!trip.getOwnerEmail().equals(ownerEmail)) {
-      throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
-    }
-
+    Trip trip = this.checkIfIsTripOwner(tripId, ownerEmail, Actions.UPDATE);
     trip.setIsConfirmed(isConfirmed);
     this.tripRepository.save(trip);
   }
@@ -136,6 +125,20 @@ public class TripService {
           foundTrip.setEndsAt(newEndDate);
         }
         return this.tripRepository.save(foundTrip);
+      })
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+  }
+
+  Trip checkIfIsTripOwner(UUID tripId, String ownerEmail, Actions crudAction) {
+    return this.tripRepository.findById(tripId)
+      .map(foundTrip -> {
+        String exceptionMessage = String.format(
+          "Acesso negado: Você não tem permissão para %s este recurso", crudAction.getValue()
+        );
+        if(!foundTrip.getOwnerEmail().equals(ownerEmail)) {
+          throw new AccessDeniedException(exceptionMessage);
+        }
+        return foundTrip;
       })
       .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
   }
