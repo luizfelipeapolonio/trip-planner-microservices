@@ -8,6 +8,7 @@ import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
+import com.felipe.trip_planner_trip_service.utils.Actions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -490,5 +491,94 @@ public class TripServiceTest {
 
     verify(this.tripRepository, times(1)).findById(trip.getId());
     verify(this.tripRepository, never()).save(any(Trip.class));
+  }
+
+  @Test
+  @DisplayName("checkIfIsTripOwner - Should successfully check if the given e-mail belongs to the trip owner, and return the trip")
+  void checkIfIsTripOwnerSuccess() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Trip returnedTrip = this.tripService.checkIfIsTripOwner(trip.getId(), "user1@email.com", Actions.GET);
+
+    assertThat(returnedTrip.getId()).isEqualTo(trip.getId());
+    assertThat(returnedTrip.getDestination()).isEqualTo(trip.getDestination());
+    assertThat(returnedTrip.getOwnerName()).isEqualTo(trip.getOwnerName());
+    assertThat(returnedTrip.getOwnerEmail()).isEqualTo(trip.getOwnerEmail());
+    assertThat(returnedTrip.isConfirmed()).isEqualTo(trip.isConfirmed());
+    assertThat(returnedTrip.getStartsAt()).isEqualTo(trip.getStartsAt());
+    assertThat(returnedTrip.getEndsAt()).isEqualTo(trip.getEndsAt());
+    assertThat(returnedTrip.getCreatedAt()).isEqualTo(trip.getCreatedAt());
+    assertThat(returnedTrip.getUpdatedAt()).isEqualTo(trip.getUpdatedAt());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("checkIfIsTripOwner - Should throw a RecordNotFoundException if the trip is not found")
+  void checkIfIsOwnerFailsByTripNotFound() {
+    Trip trip = this.trips.get(0);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.tripService.checkIfIsTripOwner(trip.getId(), "user1@email.com", Actions.GET));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Viagem de id: '%s' não encontrada", trip.getId());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("checkIfIsTripOwner - Should throw an AccessDeniedException with Actions.GET message")
+  void checkIsIsTripOwnerFailsByAccessDeniedWithGetMessage() {
+    Trip trip = this.trips.get(0);
+    String email = "user2@email.com";
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.checkIfIsTripOwner(trip.getId(), email, Actions.GET));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para acessar este recurso");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("checkIfIsTripOwner - Should throw an AccessDeniedException with Actions.UPDATE message")
+  void checkIfIsTripOwnerFailsByAccessDeniedWithUpdateMessage() {
+    Trip trip = this.trips.get(0);
+    String email = "user2@email.com";
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.checkIfIsTripOwner(trip.getId(), email, Actions.UPDATE));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para alterar este recurso");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("checkIfIsTripOwner - Should throw an AccessDeniedException with Actions.DELETE message")
+  void checkIfIsTripOwnerFailsByAccessDeniedWithDeleteMessage() {
+    Trip trip = this.trips.get(0);
+    String email = "user2@email.com";
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Exception thrown = catchException(() -> this.tripService.checkIfIsTripOwner(trip.getId(), email, Actions.DELETE));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para excluir este recurso");
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
   }
 }
