@@ -237,11 +237,11 @@ public class UserServiceTest {
   @Test
   @DisplayName("getProfile - Should successfully find the user with the given id and return it")
   void getProfileSuccess() {
-    UUID userId = this.user.getId();
+    String email = this.user.getEmail();
 
-    when(this.userRepository.findById(userId)).thenReturn(Optional.of(this.user));
+    when(this.userRepository.findByEmail(email)).thenReturn(Optional.of(this.user));
 
-    User foundUser = this.userService.getProfile(userId);
+    User foundUser = this.userService.getProfile(email);
 
     assertThat(foundUser.getId()).isEqualTo(this.user.getId());
     assertThat(foundUser.getName()).isEqualTo(this.user.getName());
@@ -250,23 +250,23 @@ public class UserServiceTest {
     assertThat(foundUser.getCreatedAt()).isEqualTo(this.user.getCreatedAt());
     assertThat(foundUser.getUpdatedAt()).isEqualTo(this.user.getUpdatedAt());
 
-    verify(this.userRepository, times(1)).findById(userId);
+    verify(this.userRepository, times(1)).findByEmail(email);
   }
 
   @Test
   @DisplayName("getProfile - Should throw a RecordNotFoundException if the user is not found")
   void getProfileFailsByUserNotFound() {
-    UUID userId = UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35");
+    String email = this.user.getEmail();
 
-    when(this.userRepository.findById(userId)).thenReturn(Optional.empty());
+    when(this.userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-    Exception thrown = catchException(() -> this.userService.getProfile(userId));
+    Exception thrown = catchException(() -> this.userService.getProfile(email));
 
     assertThat(thrown)
       .isExactlyInstanceOf(RecordNotFoundException.class)
-      .hasMessage("Usuário de id: '%s' não encontrado", userId);
+      .hasMessage("Usuário de email: '%s' não encontrado", email);
 
-    verify(this.userRepository, times(1)).findById(userId);
+    verify(this.userRepository, times(1)).findByEmail(email);
   }
 
   @Test

@@ -180,11 +180,11 @@ public class UserControllerTest {
   @Test
   @DisplayName("getProfile - Should return a success response with ok status code and the user profile")
   void getProfileSuccess() throws Exception {
-    UUID userId = this.user.getId();
+    String email = this.user.getEmail();
 
-    when(this.userService.getProfile(userId)).thenReturn(this.user);
+    when(this.userService.getProfile(email)).thenReturn(this.user);
 
-    this.mockMvc.perform(get(BASE_URL + "/62dac895-a1f0-4140-b52b-4c12cb82c6ff")
+    this.mockMvc.perform(get(BASE_URL + "/user1@email.com")
       .accept(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id").value(this.user.getId().toString()))
@@ -194,25 +194,25 @@ public class UserControllerTest {
       .andExpect(jsonPath("$.createdAt").value(this.user.getCreatedAt().toString()))
       .andExpect(jsonPath("$.updatedAt").value(this.user.getUpdatedAt().toString()));
 
-    verify(this.userService, times(1)).getProfile(userId);
+    verify(this.userService, times(1)).getProfile(email);
   }
 
   @Test
   @DisplayName("getProfile - Should return an error response with not found status code")
   void getProfileFailsByUserNotFound() throws Exception {
-    UUID userId = this.user.getId();
+    String email = this.user.getEmail();
 
-    when(this.userService.getProfile(userId))
-      .thenThrow(new RecordNotFoundException("Usuário de id: '" + userId + "' não encontrado"));
+    when(this.userService.getProfile(email))
+      .thenThrow(new RecordNotFoundException("Usuário de email: '" + email + "' não encontrado"));
 
-    this.mockMvc.perform(get(BASE_URL + "/62dac895-a1f0-4140-b52b-4c12cb82c6ff")
+    this.mockMvc.perform(get(BASE_URL + "/user1@email.com")
       .accept(MediaType.APPLICATION_JSON))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
       .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
-      .andExpect(jsonPath("$.message").value("Usuário de id: '62dac895-a1f0-4140-b52b-4c12cb82c6ff' não encontrado"))
+      .andExpect(jsonPath("$.message").value("Usuário de email: 'user1@email.com' não encontrado"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.userService, times(1)).getProfile(userId);
+    verify(this.userService, times(1)).getProfile(email);
   }
 }
