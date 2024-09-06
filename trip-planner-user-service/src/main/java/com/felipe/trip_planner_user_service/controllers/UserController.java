@@ -77,10 +77,10 @@ public class UserController {
   }
 
   // An endpoint for internal calls from microservices to get a user profile
-  @GetMapping("/{userId}")
+  @GetMapping("/{email}")
   @ResponseStatus(HttpStatus.OK)
-  public UserResponseDTO getProfile(@PathVariable UUID userId) {
-    User foundUser = this.userService.getProfile(userId);
+  public UserResponseDTO getProfile(@PathVariable String email) {
+    User foundUser = this.userService.getProfile(email);
     return new UserResponseDTO(foundUser);
   }
 }

@@ -93,9 +93,9 @@ public class UserService {
     return userPrincipal.getUser();
   }
 
-  public User getProfile(UUID userId) {
-    return this.userRepository.findById(userId)
-      .orElseThrow(() -> new RecordNotFoundException("Usuário de id: '" + userId + "' não encontrado"));
+  public User getProfile(String email) {
+    return this.userRepository.findByEmail(email)
+      .orElseThrow(() -> new RecordNotFoundException("Usuário de email: '" + email + "' não encontrado"));
   }
 
   public User update(UUID userId, UserUpdateDTO updateDTO) {
