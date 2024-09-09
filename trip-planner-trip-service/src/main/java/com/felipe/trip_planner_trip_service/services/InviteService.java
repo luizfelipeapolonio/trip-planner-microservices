@@ -6,6 +6,7 @@ import com.felipe.trip_planner_trip_service.dtos.invite.CreatedInviteDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.ParticipantInviteInfoDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.TripInviteInfoDTO;
+import com.felipe.trip_planner_trip_service.exceptions.InvalidInviteException;
 import com.felipe.trip_planner_trip_service.models.Invite;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.InviteRepository;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -61,5 +63,20 @@ public class InviteService {
     );
     this.kafkaTemplate.send("invite", createdInviteDTO);
     return createdInvite.getUserEmail();
+  }
+
+  public Invite validateInvite(String inviteCode, String userEmail, String userId) {
+    UUID convertedInviteCode = UUID.fromString(inviteCode);
+    UUID convertedUserId = UUID.fromString(userId);
+    Optional<Invite> invite = this.inviteRepository.findByCodeAndIsValidTrue(convertedInviteCode);
+
+    if(invite.isEmpty() || !isInvitedParticipant(invite.get(), userEmail, convertedUserId)) {
+      throw new InvalidInviteException();
+    }
+    return invite.get();
+  }
+
+  private boolean isInvitedParticipant(Invite invite, String userEmail, UUID userId) {
+    return invite.getUserEmail().equals(userEmail) && invite.getUserId().equals(userId);
   }
 }
