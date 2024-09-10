@@ -20,7 +20,7 @@ spring:
         - id: trip-planner-trip-service
           uri: lb://TRIP-PLANNER-TRIP-SERVICE
           predicates:
-            - Path=/trips/**
+            - Path=/trips/**,/participants/**
           filters:
             - PrefixPath=/api
             - AuthenticationFilter
