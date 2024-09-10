@@ -61,8 +61,8 @@ public class InviteServiceTest {
     Trip trip = new Trip();
     trip.setId(UUID.fromString("5f1b0d11-07a6-4a63-a5bf-381a09a784af"));
     trip.setDestination("Destino 3");
-    trip.setOwnerName("User 2");
-    trip.setOwnerEmail("user2@email.com");
+    trip.setOwnerName("User 1");
+    trip.setOwnerEmail("user1@email.com");
     trip.setStartsAt(LocalDate.parse("02-08-2024", formatter));
     trip.setEndsAt(LocalDate.parse("05-08-2024", formatter));
     trip.setCreatedAt(mockDateTime);
@@ -71,6 +71,7 @@ public class InviteServiceTest {
     Invite newInvite = new Invite();
     newInvite.setCode(UUID.fromString("62dac895-a1f0-4140-b52b-4c12cb82c6ff"));
     newInvite.setUserId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
+    newInvite.setUsername("User 2");
     newInvite.setUserEmail("user2@email.com");
     newInvite.setCreatedAt(mockDateTime);
     newInvite.setTrip(trip);
@@ -119,6 +120,7 @@ public class InviteServiceTest {
     assertThat(validatedInvite.getCode()).isEqualTo(this.invite.getCode());
     assertThat(validatedInvite.getTrip().getId()).isEqualTo(this.invite.getTrip().getId());
     assertThat(validatedInvite.getUserId()).isEqualTo(this.invite.getUserId());
+    assertThat(validatedInvite.getUsername()).isEqualTo(this.invite.getUsername());
     assertThat(validatedInvite.getUserEmail()).isEqualTo(this.invite.getUserEmail());
     assertThat(validatedInvite.getCreatedAt()).isEqualTo(this.invite.getCreatedAt());
 
