@@ -24,6 +24,9 @@ public class Invite {
   @Column(name = "user_id", nullable = false)
   private UUID userId;
 
+  @Column(nullable = false)
+  private String username;
+
   @Column(name = "user_email", nullable = false)
   private String userEmail;
 
@@ -54,6 +57,14 @@ public class Invite {
 
   public void setUserId(UUID userId) {
     this.userId = userId;
+  }
+
+  public String getUsername() {
+    return this.username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
   }
 
   public String getUserEmail() {

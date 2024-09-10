@@ -33,8 +33,7 @@ public class ParticipantService {
 
     Participant newParticipant = new Participant();
     newParticipant.setId(validatedInvite.getUserId());
-    // TODO: adicionar o nome do participant na entity de Invite
-    newParticipant.setName("IMPLEMENTAR");
+    newParticipant.setName(validatedInvite.getUsername());
     newParticipant.setEmail(validatedInvite.getUserEmail());
     newParticipant.setTrip(trip);
 

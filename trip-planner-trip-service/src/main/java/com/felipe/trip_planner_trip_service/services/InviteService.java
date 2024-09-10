@@ -47,6 +47,7 @@ public class InviteService {
     Invite newInvite = new Invite();
     newInvite.setTrip(trip);
     newInvite.setUserId(UUID.fromString(userClientDTO.id()));
+    newInvite.setUsername(userClientDTO.name());
     newInvite.setUserEmail(userClientDTO.email());
 
     Invite createdInvite = this.inviteRepository.save(newInvite);
@@ -54,7 +55,7 @@ public class InviteService {
     CreatedInviteDTO createdInviteDTO = new CreatedInviteDTO(
       createdInvite.getCode(),
       new TripInviteInfoDTO(trip),
-      new ParticipantInviteInfoDTO(userClientDTO.name(), userClientDTO.email())
+      new ParticipantInviteInfoDTO(createdInvite.getUsername(), createdInvite.getUserEmail())
     );
 
     logger.info(
