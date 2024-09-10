@@ -6,6 +6,7 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
+import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import com.felipe.trip_planner_trip_service.utils.Actions;
@@ -54,6 +55,12 @@ public class TripServiceTest {
     LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
+    Participant participant = new Participant();
+    participant.setId(UUID.fromString("47875e77-5ab5-4386-b266-b8f589bace5a"));
+    participant.setName("User 3");
+    participant.setEmail("user3@email.com");
+    participant.setCreatedAt(mockDateTime);
+
     Trip trip = new Trip();
     trip.setId(UUID.fromString("62dac895-a1f0-4140-b52b-4c12cb82c6ff"));
     trip.setDestination("Destino 1");
@@ -73,6 +80,7 @@ public class TripServiceTest {
     trip2.setEndsAt(LocalDate.parse("05-08-2024", formatter));
     trip2.setCreatedAt(mockDateTime);
     trip2.setUpdatedAt(mockDateTime);
+    trip2.getParticipants().add(participant);
 
     Trip trip3 = new Trip();
     trip3.setId(UUID.fromString("5f1b0d11-07a6-4a63-a5bf-381a09a784af"));
@@ -295,8 +303,8 @@ public class TripServiceTest {
   }
 
   @Test
-  @DisplayName("getById - Should successfully find a trip by id and return it")
-  void getByIdSuccess() {
+  @DisplayName("getById - Should successfully find a trip by id and return it by trip owner")
+  void getByIdTripOwnerSuccess() {
     Trip trip = this.trips.get(0);
 
     when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
@@ -317,7 +325,29 @@ public class TripServiceTest {
   }
 
   @Test
-  @DisplayName("getById - Should throw an AccessDeniedException if the authenticated user is not the trip owner")
+  @DisplayName("getById - Should successfully get a trip by id and return it by trip participant")
+  void getByIdTripParticipantSuccess() {
+    Trip trip = this.trips.get(1);
+
+    when(this.tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+
+    Trip foundTrip = this.tripService.getById(trip.getId(), "user3@email.com");
+
+    assertThat(foundTrip.getId()).isEqualTo(trip.getId());
+    assertThat(foundTrip.getDestination()).isEqualTo(trip.getDestination());
+    assertThat(foundTrip.getOwnerName()).isEqualTo(trip.getOwnerName());
+    assertThat(foundTrip.getOwnerEmail()).isEqualTo(trip.getOwnerEmail());
+    assertThat(foundTrip.isConfirmed()).isEqualTo(trip.isConfirmed());
+    assertThat(foundTrip.getStartsAt()).isEqualTo(trip.getStartsAt());
+    assertThat(foundTrip.getEndsAt()).isEqualTo(trip.getEndsAt());
+    assertThat(foundTrip.getCreatedAt()).isEqualTo(trip.getCreatedAt());
+    assertThat(foundTrip.getUpdatedAt()).isEqualTo(trip.getUpdatedAt());
+
+    verify(this.tripRepository, times(1)).findById(trip.getId());
+  }
+
+  @Test
+  @DisplayName("getById - Should throw an AccessDeniedException if the authenticated user is not the trip owner or a trip participant")
   void getByIdFailsByAccessDenied() {
     Trip trip = this.trips.get(0);
 
