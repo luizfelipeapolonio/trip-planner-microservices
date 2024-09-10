@@ -6,6 +6,7 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
+import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import com.felipe.trip_planner_trip_service.utils.Actions;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -56,12 +58,17 @@ public class TripService {
     return this.tripRepository.findAllByOwnerEmail(ownerEmail, pagination);
   }
 
-  public Trip getById(UUID tripId, String ownerEmail) {
+  public Trip getById(UUID tripId, String userEmail) {
     Trip trip = this.tripRepository.findById(tripId)
       .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
 
-    // TODO: verificar se o usuário autenticado é um participante da viagem
-    if(!trip.getOwnerEmail().equals(ownerEmail)) {
+    Optional<Participant> tripParticipant = trip.getParticipants()
+      .stream()
+      .filter(participant -> participant.getEmail().equals(userEmail))
+      .findFirst();
+
+    // Check if is the trip owner or a trip participant
+    if(!trip.getOwnerEmail().equals(userEmail) && tripParticipant.isEmpty()) {
       throw new AccessDeniedException("Acesso negado: Você não tem permissão para acessar este recurso");
     }
     return trip;
@@ -113,7 +120,7 @@ public class TripService {
           foundTrip.setEndsAt(newEndDate);
         }
 
-        // When both startsAt and endsAt is provided
+        // When both startsAt and endsAt are provided
         if(tripDTO.startsAt() != null && tripDTO.endsAt() != null) {
           LocalDate newStartDate = this.convertDate(tripDTO.startsAt());
           LocalDate newEndDate = this.convertDate(tripDTO.endsAt());

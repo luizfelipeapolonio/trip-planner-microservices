@@ -119,11 +119,11 @@ public class TripController {
   @GetMapping("/{tripId}")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<TripResponseDTO> getById(
-    @RequestHeader("userEmail") String ownerEmail,
+    @RequestHeader("userEmail") String userEmail,
     @PathVariable UUID tripId
   ) {
-    logger.info("Request Header -> userEmail: {}", ownerEmail);
-    Trip trip = this.tripService.getById(tripId, ownerEmail);
+    logger.info("Request Header -> userEmail: {}", userEmail);
+    Trip trip = this.tripService.getById(tripId, userEmail);
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
 
     CustomResponseBody<TripResponseDTO> response = new CustomResponseBody<>();
