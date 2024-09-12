@@ -3,6 +3,7 @@ package com.felipe.trip_planner_trip_service.controllers;
 import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidInviteException;
+import com.felipe.trip_planner_trip_service.exceptions.ParticipantAlreadyExistsException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.CustomValidationErrors;
@@ -78,6 +79,17 @@ public class ExceptionControllerAdvice {
     CustomResponseBody<Void> response = new CustomResponseBody<>();
     response.setStatus(ResponseConditionStatus.ERROR);
     response.setCode(HttpStatus.BAD_REQUEST);
+    response.setMessage(e.getMessage());
+    response.setData(null);
+    return response;
+  }
+
+  @ExceptionHandler(ParticipantAlreadyExistsException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  public CustomResponseBody<Void> handleParticipantAlreadyExistsException(ParticipantAlreadyExistsException e) {
+    CustomResponseBody<Void> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.ERROR);
+    response.setCode(HttpStatus.CONFLICT);
     response.setMessage(e.getMessage());
     response.setData(null);
     return response;
