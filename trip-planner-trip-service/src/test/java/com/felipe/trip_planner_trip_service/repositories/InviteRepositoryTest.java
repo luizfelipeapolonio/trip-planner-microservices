@@ -61,8 +61,16 @@ public class InviteRepositoryTest {
     invite2.setCreatedAt(mockDateTime);
     invite2.setIsValid(false);
 
+    Invite invite3 = new Invite();
+    invite3.setTrip(trip);
+    invite3.setUserId(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
+    invite3.setUsername("User 3");
+    invite3.setUserEmail("user3@email.com");
+    invite3.setCreatedAt(mockDateTime);
+    invite3.setIsValid(false);
+
     this.trip = trip;
-    this.invites = List.of(invite1, invite2);
+    this.invites = List.of(invite1, invite2, invite3);
   }
 
   @Test
@@ -110,6 +118,63 @@ public class InviteRepositoryTest {
     this.entityManager.persist(this.invites.get(1));
 
     Optional<Invite> foundInvite = this.inviteRepository.findByCodeAndIsValidTrue(inviteCode);
+
+    assertThat(foundInvite).isEmpty();
+  }
+
+  @Test
+  @DisplayName("findByUserEmailAndTripIdAndIsValidTrue - Should successfully return a valid invite given the user email and the trip id")
+  void findByUserEmailAndTripIdAndIsValidTrueSuccess() {
+    Invite invite = this.invites.get(0);
+    String userEmail = "user2@email.com";
+
+    this.entityManager.persist(this.trip);
+    this.entityManager.persist(this.invites.get(0));
+    this.entityManager.persist(this.invites.get(1));
+
+    UUID tripId = this.trip.getId();
+
+    Optional<Invite> foundInvite = this.inviteRepository.findByUserEmailAndTripIdAndIsValidTrue(userEmail, tripId);
+
+    assertThat(foundInvite).isPresent();
+    assertThat(foundInvite.get().getCode()).isEqualTo(invite.getCode());
+    assertThat(foundInvite.get().isValid()).isTrue();
+    assertThat(foundInvite.get().getTrip().getId()).isEqualTo(this.trip.getId());
+    assertThat(foundInvite.get().getUserId()).isEqualTo(invite.getUserId());
+    assertThat(foundInvite.get().getUsername()).isEqualTo(invite.getUsername());
+    assertThat(foundInvite.get().getUserEmail()).isEqualTo(invite.getUserEmail());
+    assertThat(foundInvite.get().getCreatedAt()).isEqualTo(invite.getCreatedAt());
+  }
+
+  @Test
+  @DisplayName("findByUserEmailAndTripIdAndIsValidTrue - Should return an optional empty if any invite is found with the given user email and trip id")
+  void findByUserEmailAndTripIdAndIsValidTrueReturnsEmptyByInviteNotFound() {
+    String userEmail = "user4@email.com";
+
+    this.entityManager.persist(this.trip);
+    this.entityManager.persist(this.invites.get(0));
+    this.entityManager.persist(this.invites.get(1));
+
+    UUID tripId = this.trip.getId();
+
+    Optional<Invite> foundInvite = this.inviteRepository.findByUserEmailAndTripIdAndIsValidTrue(userEmail, tripId);
+
+    assertThat(foundInvite).isEmpty();
+  }
+
+  @Test
+  @DisplayName("findByUserEmailAndTripIdAndIsValidTrue - Should return an optional empty if an invite is found but isValid is false")
+  void findByUserEmailAndTripIdAndIsValidTrueReturnsEmptyByInvalidInvite() {
+    String userEmail = "user3@email.com";
+
+    this.entityManager.persist(this.trip);
+    this.entityManager.persist(this.invites.get(0));
+    this.entityManager.persist(this.invites.get(1));
+    this.entityManager.persist(this.invites.get(2));
+
+    UUID tripId = this.trip.getId();
+
+    Optional<Invite> foundInvite = this.inviteRepository.findByUserEmailAndTripIdAndIsValidTrue(userEmail, tripId);
 
     assertThat(foundInvite).isEmpty();
   }

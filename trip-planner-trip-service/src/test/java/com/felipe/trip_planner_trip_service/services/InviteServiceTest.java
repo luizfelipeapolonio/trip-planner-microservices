@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +26,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.catchException;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,6 +98,8 @@ public class InviteServiceTest {
     when(this.tripService.checkIfIsTripOwner(this.trip.getId(), "user1@email.com", Actions.GET))
       .thenReturn(this.trip);
     when(this.userClient.getProfile("user2@email.com")).thenReturn(userClientDTO);
+    when(this.inviteRepository.findByUserEmailAndTripIdAndIsValidTrue(inviteDTO.email(), this.trip.getId()))
+      .thenReturn(Optional.empty());
     when(this.inviteRepository.save(any(Invite.class))).thenReturn(this.invite);
 
     String invitedUserEmail = this.inviteService.invite(this.trip.getId(), "user1@email.com", inviteDTO);
@@ -103,6 +108,57 @@ public class InviteServiceTest {
 
     verify(this.tripService, times(1)).checkIfIsTripOwner(this.trip.getId(), "user1@email.com", Actions.GET);
     verify(this.userClient, times(1)).getProfile(inviteDTO.email());
+    verify(this.inviteRepository, times(1)).findByUserEmailAndTripIdAndIsValidTrue(inviteDTO.email(), this.trip.getId());
+    verify(this.inviteRepository, never()).delete(any(Invite.class));
+    verify(this.inviteRepository, times(1)).save(any(Invite.class));
+    verify(this.kafkaTemplate, times(1)).send(eq("invite"), any(CreatedInviteDTO.class));
+  }
+
+  @Test
+  @DisplayName("invite - Should delete an existing invite, and successfully create a new invite and return it")
+  void inviteDeletingExistingInviteSuccess() {
+    LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
+    InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
+    UserClientDTO userClientDTO = new UserClientDTO(
+      this.invite.getUserId().toString(),
+      "User 2",
+      this.invite.getUserEmail(),
+      LocalDateTime.parse("2024-01-01T12:00:00.123456"),
+      LocalDateTime.parse("2024-01-01T12:00:00.123456")
+    );
+
+    Invite existingInvite = new Invite();
+    existingInvite.setCode(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
+    existingInvite.setUserId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
+    existingInvite.setUsername("User 2");
+    existingInvite.setUserEmail("user2@email.com");
+    existingInvite.setCreatedAt(mockDateTime);
+    existingInvite.setTrip(this.trip);
+
+    ArgumentCaptor<Invite> inviteCapture = ArgumentCaptor.forClass(Invite.class);
+
+    when(this.tripService.checkIfIsTripOwner(this.trip.getId(), "user1@email.com", Actions.GET))
+      .thenReturn(this.trip);
+    when(this.userClient.getProfile(inviteDTO.email())).thenReturn(userClientDTO);
+    when(this.inviteRepository.findByUserEmailAndTripIdAndIsValidTrue(inviteDTO.email(), this.trip.getId()))
+      .thenReturn(Optional.of(existingInvite));
+    doNothing().when(this.inviteRepository).delete(inviteCapture.capture());
+    when(this.inviteRepository.save(any(Invite.class))).thenReturn(this.invite);
+
+    String invitedUserEmail = this.inviteService.invite(this.trip.getId(), "user1@email.com", inviteDTO);
+
+    assertThat(invitedUserEmail).isEqualTo(this.invite.getUserEmail());
+    assertThat(inviteCapture.getValue().getCode()).isEqualTo(existingInvite.getCode());
+    assertThat(inviteCapture.getValue().getUserId()).isEqualTo(existingInvite.getUserId());
+    assertThat(inviteCapture.getValue().getUsername()).isEqualTo(existingInvite.getUsername());
+    assertThat(inviteCapture.getValue().getUserEmail()).isEqualTo(existingInvite.getUserEmail());
+    assertThat(inviteCapture.getValue().getCreatedAt()).isEqualTo(existingInvite.getCreatedAt());
+    assertThat(inviteCapture.getValue().getTrip().getId()).isEqualTo(existingInvite.getTrip().getId());
+
+    verify(this.tripService, times(1)).checkIfIsTripOwner(this.trip.getId(), "user1@email.com", Actions.GET);
+    verify(this.userClient, times(1)).getProfile(inviteDTO.email());
+    verify(this.inviteRepository, times(1)).findByUserEmailAndTripIdAndIsValidTrue(inviteDTO.email(), this.trip.getId());
+    verify(this.inviteRepository, times(1)).delete(existingInvite);
     verify(this.inviteRepository, times(1)).save(any(Invite.class));
     verify(this.kafkaTemplate, times(1)).send(eq("invite"), any(CreatedInviteDTO.class));
   }
