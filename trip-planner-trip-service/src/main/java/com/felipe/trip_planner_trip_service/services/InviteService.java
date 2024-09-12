@@ -43,6 +43,7 @@ public class InviteService {
   public String invite(UUID tripId, String ownerEmail, InviteParticipantDTO inviteDTO) {
     Trip trip = this.tripService.checkIfIsTripOwner(tripId, ownerEmail, Actions.GET);
     UserClientDTO userClientDTO = this.userClient.getProfile(inviteDTO.email());
+    this.checkForExistingInviteAndDeleteIt(inviteDTO.email(), tripId);
 
     Invite newInvite = new Invite();
     newInvite.setTrip(trip);
@@ -79,5 +80,15 @@ public class InviteService {
 
   private boolean isInvitedParticipant(Invite invite, String userEmail, UUID userId) {
     return invite.getUserEmail().equals(userEmail) && invite.getUserId().equals(userId);
+  }
+
+  private void checkForExistingInviteAndDeleteIt(String userEmail, UUID tripId) {
+    this.inviteRepository.findByUserEmailAndTripIdAndIsValidTrue(userEmail, tripId)
+      .ifPresent(invite -> {
+        logger.info(
+          "Excluindo invite existente. userEmail: {} -  tripId: {}", invite.getUserEmail(), tripId
+        );
+        this.inviteRepository.delete(invite);
+      });
   }
 }
