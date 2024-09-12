@@ -7,7 +7,9 @@ import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.ParticipantInviteInfoDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.TripInviteInfoDTO;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidInviteException;
+import com.felipe.trip_planner_trip_service.exceptions.ParticipantAlreadyExistsException;
 import com.felipe.trip_planner_trip_service.models.Invite;
+import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.InviteRepository;
 import com.felipe.trip_planner_trip_service.utils.Actions;
@@ -43,6 +45,7 @@ public class InviteService {
   public String invite(UUID tripId, String ownerEmail, InviteParticipantDTO inviteDTO) {
     Trip trip = this.tripService.checkIfIsTripOwner(tripId, ownerEmail, Actions.GET);
     UserClientDTO userClientDTO = this.userClient.getProfile(inviteDTO.email());
+    this.checkForExistingParticipant(trip, inviteDTO.email());
     this.checkForExistingInviteAndDeleteIt(inviteDTO.email(), tripId);
 
     Invite newInvite = new Invite();
@@ -90,5 +93,16 @@ public class InviteService {
         );
         this.inviteRepository.delete(invite);
       });
+  }
+
+  private void checkForExistingParticipant(Trip trip, String userEmail) {
+    Optional<Participant> existingParticipant = trip.getParticipants()
+      .stream()
+      .filter(participant -> participant.getEmail().equals(userEmail))
+      .findFirst();
+
+    if(existingParticipant.isPresent()) {
+      throw new ParticipantAlreadyExistsException(existingParticipant.get().getEmail());
+    }
   }
 }
