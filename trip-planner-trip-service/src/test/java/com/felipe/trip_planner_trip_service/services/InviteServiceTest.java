@@ -5,7 +5,9 @@ import com.felipe.trip_planner_trip_service.dtos.UserClientDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.CreatedInviteDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidInviteException;
+import com.felipe.trip_planner_trip_service.exceptions.ParticipantAlreadyExistsException;
 import com.felipe.trip_planner_trip_service.models.Invite;
+import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.InviteRepository;
 import com.felipe.trip_planner_trip_service.utils.Actions;
@@ -161,6 +163,46 @@ public class InviteServiceTest {
     verify(this.inviteRepository, times(1)).delete(existingInvite);
     verify(this.inviteRepository, times(1)).save(any(Invite.class));
     verify(this.kafkaTemplate, times(1)).send(eq("invite"), any(CreatedInviteDTO.class));
+  }
+
+  @Test
+  @DisplayName("invite - Should throw a ParticipantAlreadyExistsException if user is a trip participant")
+  void inviteFailsByExistingParticipant() {
+    LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
+
+    Participant participant = new Participant();
+    participant.setId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
+    participant.setName("User 2");
+    participant.setEmail("user2@email.com");
+    participant.setCreatedAt(mockDateTime);
+
+    this.trip.getParticipants().add(participant);
+
+    InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
+    UserClientDTO userClientDTO = new UserClientDTO(
+      this.invite.getUserId().toString(),
+      "User 2",
+      this.invite.getUserEmail(),
+      LocalDateTime.parse("2024-01-01T12:00:00.123456"),
+      LocalDateTime.parse("2024-01-01T12:00:00.123456")
+    );
+
+    when(this.tripService.checkIfIsTripOwner(this.trip.getId(), "user1@email.com", Actions.GET))
+      .thenReturn(this.trip);
+    when(this.userClient.getProfile(inviteDTO.email())).thenReturn(userClientDTO);
+
+    Exception thrown = catchException(() -> this.inviteService.invite(this.trip.getId(), "user1@email.com", inviteDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(ParticipantAlreadyExistsException.class)
+      .hasMessage("Usuário de e-mail '%s' já é um participante da viagem", participant.getEmail());
+
+    verify(this.tripService, times(1)).checkIfIsTripOwner(this.trip.getId(), "user1@email.com", Actions.GET);
+    verify(this.userClient, times(1)).getProfile(inviteDTO.email());
+    verify(this.inviteRepository, never()).findByUserEmailAndTripIdAndIsValidTrue(any(String.class), any(UUID.class));
+    verify(this.inviteRepository, never()).delete(any(Invite.class));
+    verify(this.inviteRepository, never()).save(any(Invite.class));
+    verify(this.kafkaTemplate, never()).send(any(String.class), any(CreatedInviteDTO.class));
   }
 
   @Test
