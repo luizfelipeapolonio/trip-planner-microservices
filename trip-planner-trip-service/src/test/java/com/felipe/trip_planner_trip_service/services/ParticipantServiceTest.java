@@ -5,6 +5,7 @@ import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Invite;
 import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
+import com.felipe.trip_planner_trip_service.repositories.InviteRepository;
 import com.felipe.trip_planner_trip_service.repositories.ParticipantRepository;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,9 @@ public class ParticipantServiceTest {
 
   @Mock
   private InviteService inviteService;
+
+  @Mock
+  private InviteRepository inviteRepository;
 
   private Participant participant;
   private Invite invite;
@@ -104,6 +108,7 @@ public class ParticipantServiceTest {
     verify(this.inviteService, times(1)).validateInvite(participantDTO.inviteCode(), userEmail, userId);
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, times(1)).save(any(Participant.class));
+    verify(this.inviteRepository, times(1)).delete(this.invite);
   }
 
   @Test
@@ -125,6 +130,7 @@ public class ParticipantServiceTest {
     verify(this.inviteService, times(1)).validateInvite(participantDTO.inviteCode(), userEmail, userId);
     verify(this.tripRepository, times(1)).findById(this.invite.getTrip().getId());
     verify(this.participantRepository, never()).save(any(Participant.class));
+    verify(this.inviteRepository, never()).delete(any(Invite.class));
   }
 }
 
