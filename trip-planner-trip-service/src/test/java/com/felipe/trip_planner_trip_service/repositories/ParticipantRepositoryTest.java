@@ -8,6 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -89,5 +92,30 @@ public class ParticipantRepositoryTest {
     Optional<Participant> foundParticipant = this.participantRepository.findByEmailAndTripId(userEmail, tripId);
 
     assertThat(foundParticipant).isEmpty();
+  }
+
+  @Test
+  @DisplayName("findAllAndTripId - Should return a Page of Participant with all trip participants")
+  void findAllByTripIdReturnsAllParticipants() {
+    LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
+
+    Participant participant2 = new Participant();
+    participant2.setId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
+    participant2.setName("User 3");
+    participant2.setEmail("user3@email.com");
+    participant2.setCreatedAt(mockDateTime);
+    participant2.setTrip(this.trip);
+
+    Pageable pageable = PageRequest.of(0, 10);
+
+    this.entityManager.persist(this.trip);
+    this.entityManager.persist(this.participant);
+    this.entityManager.persist(participant2);
+
+    Page<Participant> returnedPage = this.participantRepository.findAllByTripId(this.trip.getId(), pageable);
+
+    assertThat(returnedPage.getTotalElements()).isEqualTo(2L);
+    assertThat(returnedPage.getContent())
+      .allSatisfy(participant -> assertThat(participant.getTrip().getId()).isEqualTo(this.trip.getId()));
   }
 }
