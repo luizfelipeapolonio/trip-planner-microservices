@@ -1,12 +1,16 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
+import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
+import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.InviteService;
+import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
@@ -38,11 +42,13 @@ public class TripController {
 
   private final TripService tripService;
   private final InviteService inviteService;
+  private final ParticipantService participantService;
   private final Logger logger = LoggerFactory.getLogger(TripController.class);
 
-  public TripController(TripService tripService, InviteService inviteService) {
+  public TripController(TripService tripService, InviteService inviteService, ParticipantService participantService) {
     this.tripService = tripService;
     this.inviteService = inviteService;
+    this.participantService = participantService;
   }
 
   @PostMapping
@@ -198,6 +204,34 @@ public class TripController {
     response.setCode(HttpStatus.OK);
     response.setMessage("Convite enviado com sucesso para: " + email);
     response.setData(null);
+    return response;
+  }
+
+  @GetMapping("/{tripId}/participants")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<ParticipantResponsePageDTO> getAllTripParticipants(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @RequestParam(defaultValue = "0") int page
+  ) {
+    logger.info("Request Header -> userEmail: {}", userEmail);
+    Page<Participant> allParticipants = this.participantService.getAllTripParticipants(tripId, userEmail, page);
+    List<ParticipantResponseDTO> participantDTOs = allParticipants.getContent()
+      .stream()
+      .map(ParticipantResponseDTO::new)
+      .toList();
+
+    ParticipantResponsePageDTO participantPageDTO = new ParticipantResponsePageDTO(
+      participantDTOs,
+      allParticipants.getTotalElements(),
+      allParticipants.getTotalPages()
+    );
+
+    CustomResponseBody<ParticipantResponsePageDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todos os participantes da viagem de id: '" + tripId + "'");
+    response.setData(participantPageDTO);
     return response;
   }
 }

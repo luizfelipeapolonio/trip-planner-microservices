@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.participant.AddParticipantDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Invite;
 import com.felipe.trip_planner_trip_service.models.Participant;
@@ -10,7 +11,14 @@ import com.felipe.trip_planner_trip_service.repositories.ParticipantRepository;
 import com.felipe.trip_planner_trip_service.repositories.TripRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ParticipantService {
@@ -51,5 +59,25 @@ public class ParticipantService {
     );
     this.inviteRepository.delete(validatedInvite);
     return addedParticipant;
+  }
+
+  public Page<Participant> getAllTripParticipants(UUID tripId, String userEmail, int pageNumber) {
+    Trip trip = this.tripRepository.findById(tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    Pageable pagination = PageRequest.of(pageNumber, 10);
+    Page<Participant> allParticipants = this.participantRepository.findAllByTripId(tripId, pagination);
+
+    if(!trip.getOwnerEmail().equals(userEmail) && !isTripParticipant(allParticipants.getContent(), userEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para acessar este recurso");
+    }
+    return allParticipants;
+  }
+
+  private boolean isTripParticipant(List<Participant> participants, String userEmail) {
+    Optional<Participant> tripParticipant = participants.stream()
+      .filter(participant -> participant.getEmail().equals(userEmail))
+      .findFirst();
+    return tripParticipant.isPresent();
   }
 }
