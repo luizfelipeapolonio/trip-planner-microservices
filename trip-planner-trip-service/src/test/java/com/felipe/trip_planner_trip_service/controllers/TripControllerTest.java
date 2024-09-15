@@ -2,6 +2,8 @@ package com.felipe.trip_planner_trip_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
+import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
@@ -10,8 +12,10 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
+import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.InviteService;
+import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
@@ -70,6 +74,9 @@ public class TripControllerTest {
 
   @MockBean
   InviteService inviteService;
+
+  @MockBean
+  ParticipantService participantService;
 
   private List<Trip> trips;
   private final String BASE_URL = "/api/trips";
@@ -632,5 +639,101 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.inviteService, times(1)).invite(trip.getId(), "user1@email.com", inviteDTO);
+  }
+
+  @Test
+  @DisplayName("getAllTripParticipants - Should return a success response with ok status code and a Page with all trip participants")
+  void getAllTripParticipantsSuccess() throws Exception {
+    LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
+    Trip trip = this.trips.get(0);
+
+    Participant participant = new Participant();
+    participant.setId(UUID.fromString("47875e77-5ab5-4386-b266-b8f589bace5a"));
+    participant.setName("User 2");
+    participant.setEmail("user2@email.com");
+    participant.setCreatedAt(mockDateTime);
+    participant.setTrip(trip);
+
+    Participant participant2 = new Participant();
+    participant2.setId(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
+    participant2.setName("User 3");
+    participant2.setEmail("user3@email.com");
+    participant2.setCreatedAt(mockDateTime);
+    participant2.setTrip(trip);
+
+    Page<Participant> allParticipants = new PageImpl<>(List.of(participant, participant2));
+
+    List<ParticipantResponseDTO> participantDTOs = allParticipants.getContent()
+      .stream()
+      .map(ParticipantResponseDTO::new)
+      .toList();
+
+    var participantResponsePageDTO = new ParticipantResponsePageDTO(
+      participantDTOs,
+      allParticipants.getTotalElements(),
+      allParticipants.getTotalPages()
+    );
+
+    CustomResponseBody<ParticipantResponsePageDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todos os participantes da viagem de id: '" + trip.getId() + "'");
+    response.setData(participantResponsePageDTO);
+
+    String jsonResponseBody = this.objectMapper.writeValueAsString(response);
+    String url = String.format("%s/%s/participants", BASE_URL, trip.getId());
+
+    when(this.participantService.getAllTripParticipants(trip.getId(), "user1@email.com", 0))
+      .thenReturn(allParticipants);
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(content().json(jsonResponseBody));
+
+    verify(this.participantService, times(1)).getAllTripParticipants(trip.getId(), "user1@email.com", 0);
+  }
+
+  @Test
+  @DisplayName("getAllTripParticipants - Should return an error response with not found status code")
+  void getAllTripParticipantsFailsByTripNotFound() throws Exception {
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/participants", BASE_URL, tripId);
+
+    when(this.participantService.getAllTripParticipants(tripId, "user1@email.com", 0))
+      .thenThrow(new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Viagem de id: '" + tripId + "' não encontrada"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.participantService, times(1)).getAllTripParticipants(tripId, "user1@email.com", 0);
+  }
+
+  @Test
+  @DisplayName("getAllTripParticipants - Should return an error response with forbidden status code")
+  void getAllTripParticipantsFailsByAccessDenied() throws Exception {
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/participants", BASE_URL, tripId);
+
+    when(this.participantService.getAllTripParticipants(tripId, "user1@email.com", 0))
+      .thenThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para acessar este recurso"));
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para acessar este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.participantService, times(1)).getAllTripParticipants(tripId, "user1@email.com", 0);
   }
 }
