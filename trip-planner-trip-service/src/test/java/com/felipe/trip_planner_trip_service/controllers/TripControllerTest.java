@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripFullResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
@@ -30,6 +32,7 @@ import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -45,9 +48,13 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.anyInt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -78,7 +85,11 @@ public class TripControllerTest {
   @MockBean
   ParticipantService participantService;
 
+  @SpyBean
+  ParticipantMapper participantMapper;
+
   private List<Trip> trips;
+  private List<Participant> participants;
   private final String BASE_URL = "/api/trips";
 
   @BeforeEach
@@ -117,7 +128,22 @@ public class TripControllerTest {
     trip3.setCreatedAt(mockDateTime);
     trip3.setUpdatedAt(mockDateTime);
 
+    Participant participant = new Participant();
+    participant.setId(UUID.fromString("47875e77-5ab5-4386-b266-b8f589bace5a"));
+    participant.setName("User 2");
+    participant.setEmail("user2@email.com");
+    participant.setCreatedAt(mockDateTime);
+    participant.setTrip(trip);
+
+    Participant participant2 = new Participant();
+    participant2.setId(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
+    participant2.setName("User 3");
+    participant2.setEmail("user3@email.com");
+    participant2.setCreatedAt(mockDateTime);
+    participant2.setTrip(trip);
+
     this.trips = List.of(trip, trip2, trip3);
+    this.participants = List.of(participant, participant2);
   }
 
   @Test
@@ -292,28 +318,32 @@ public class TripControllerTest {
   @DisplayName("getById - Should return a success response with ok status code and the found trip")
   void getByIdSuccess() throws Exception {
     Trip trip = this.trips.get(0);
+    String userEmail = "user1@email.com";
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
+    Page<Participant> participants = new PageImpl<>(this.participants);
+    var participantPageDTO = this.participantMapper.toParticipantResponsePageDTO(participants);
+    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(tripResponseDTO, participantPageDTO);
 
-    when(this.tripService.getById(trip.getId(), "user1@email.com")).thenReturn(trip);
+    CustomResponseBody<TripFullResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Viagem de id: '" + trip.getId() + "' encontrada");
+    response.setData(tripFullResponseDTO);
+
+    String jsonResponseBody = this.objectMapper.writeValueAsString(response);
+
+    when(this.tripService.getById(trip.getId(), userEmail)).thenReturn(trip);
+    when(this.participantService.getAllTripParticipants(trip.getId(), userEmail, 0)).thenReturn(participants);
 
     this.mockMvc.perform(get(BASE_URL + "/" + trip.getId())
       .accept(MediaType.APPLICATION_JSON)
       .header("userEmail", "user1@email.com"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
-      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
-      .andExpect(jsonPath("$.message").value("Viagem de id: '" + trip.getId() + "' encontrada"))
-      .andExpect(jsonPath("$.data.id").value(tripResponseDTO.id()))
-      .andExpect(jsonPath("$.data.destination").value(tripResponseDTO.destination()))
-      .andExpect(jsonPath("$.data.ownerName").value(tripResponseDTO.ownerName()))
-      .andExpect(jsonPath("$.data.ownerEmail").value(tripResponseDTO.ownerEmail()))
-      .andExpect(jsonPath("$.data.isConfirmed").value(tripResponseDTO.isConfirmed()))
-      .andExpect(jsonPath("$.data.startsAt").value(tripResponseDTO.startsAt()))
-      .andExpect(jsonPath("$.data.endsAt").value(tripResponseDTO.endsAt()))
-      .andExpect(jsonPath("$.data.createdAt").value(tripResponseDTO.createdAt()))
-      .andExpect(jsonPath("$.data.updatedAt").value(tripResponseDTO.updatedAt()));
+      .andExpect(content().json(jsonResponseBody));
 
-    verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+    verify(this.tripService, times(1)).getById(trip.getId(), userEmail);
+    verify(this.participantService, times(1)).getAllTripParticipants(trip.getId(), userEmail, 0);
+    verify(this.participantMapper, times(2)).toParticipantResponsePageDTO(participants);
   }
 
   @Test
@@ -334,6 +364,8 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+    verify(this.participantService, never()).getAllTripParticipants(any(UUID.class), anyString(), anyInt());
+    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any());
   }
 
   @Test
@@ -354,6 +386,8 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.tripService, times(1)).getById(trip.getId(), "user1@email.com");
+    verify(this.participantService, never()).getAllTripParticipants(any(UUID.class), anyString(), anyInt());
+    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any());
   }
 
   @Test
@@ -644,24 +678,8 @@ public class TripControllerTest {
   @Test
   @DisplayName("getAllTripParticipants - Should return a success response with ok status code and a Page with all trip participants")
   void getAllTripParticipantsSuccess() throws Exception {
-    LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
     Trip trip = this.trips.get(0);
-
-    Participant participant = new Participant();
-    participant.setId(UUID.fromString("47875e77-5ab5-4386-b266-b8f589bace5a"));
-    participant.setName("User 2");
-    participant.setEmail("user2@email.com");
-    participant.setCreatedAt(mockDateTime);
-    participant.setTrip(trip);
-
-    Participant participant2 = new Participant();
-    participant2.setId(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
-    participant2.setName("User 3");
-    participant2.setEmail("user3@email.com");
-    participant2.setCreatedAt(mockDateTime);
-    participant2.setTrip(trip);
-
-    Page<Participant> allParticipants = new PageImpl<>(List.of(participant, participant2));
+    Page<Participant> allParticipants = new PageImpl<>(this.participants);
 
     List<ParticipantResponseDTO> participantDTOs = allParticipants.getContent()
       .stream()
@@ -685,6 +703,7 @@ public class TripControllerTest {
 
     when(this.participantService.getAllTripParticipants(trip.getId(), "user1@email.com", 0))
       .thenReturn(allParticipants);
+    when(this.participantMapper.toParticipantResponsePageDTO(allParticipants)).thenReturn(participantResponsePageDTO);
 
     this.mockMvc.perform(get(url)
       .accept(MediaType.APPLICATION_JSON)
@@ -693,6 +712,7 @@ public class TripControllerTest {
       .andExpect(content().json(jsonResponseBody));
 
     verify(this.participantService, times(1)).getAllTripParticipants(trip.getId(), "user1@email.com", 0);
+    verify(this.participantMapper, times(1)).toParticipantResponsePageDTO(allParticipants);
   }
 
   @Test
@@ -714,6 +734,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.participantService, times(1)).getAllTripParticipants(tripId, "user1@email.com", 0);
+    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any(Page.class));
   }
 
   @Test
@@ -735,5 +756,6 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.participantService, times(1)).getAllTripParticipants(tripId, "user1@email.com", 0);
+    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any(Page.class));
   }
 }
