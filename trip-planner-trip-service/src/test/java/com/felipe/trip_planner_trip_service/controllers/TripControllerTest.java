@@ -7,6 +7,7 @@ import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponse
 import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripDateDTO;
+import com.felipe.trip_planner_trip_service.dtos.trip.TripExtraInfoResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripFullResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
@@ -322,7 +323,7 @@ public class TripControllerTest {
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
     Page<Participant> participants = new PageImpl<>(this.participants);
     var participantPageDTO = this.participantMapper.toParticipantResponsePageDTO(participants);
-    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(tripResponseDTO, participantPageDTO);
+    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(tripResponseDTO, new TripExtraInfoResponseDTO(participantPageDTO));
 
     CustomResponseBody<TripFullResponseDTO> response = new CustomResponseBody<>();
     response.setStatus(ResponseConditionStatus.SUCCESS);
