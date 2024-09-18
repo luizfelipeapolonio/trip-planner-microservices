@@ -95,6 +95,39 @@ public class ParticipantRepositoryTest {
   }
 
   @Test
+  @DisplayName("findByIdAndTripId - Should successfully return a participant of a trip, given the id and trip id")
+  void findByIdAndTripIdReturnsParticipant() {
+    this.entityManager.persist(this.trip);
+    this.entityManager.persist(this.participant);
+
+    UUID tripId = this.trip.getId();
+    UUID participantId = this.participant.getId();
+
+    Optional<Participant> foundParticipant = this.participantRepository.findByIdAndTripId(participantId, tripId);
+
+    assertThat(foundParticipant).isPresent();
+    assertThat(foundParticipant.get().getId()).isEqualTo(this.participant.getId());
+    assertThat(foundParticipant.get().getName()).isEqualTo(this.participant.getName());
+    assertThat(foundParticipant.get().getEmail()).isEqualTo(this.participant.getEmail());
+    assertThat(foundParticipant.get().getCreatedAt()).isEqualTo(this.participant.getCreatedAt());
+    assertThat(foundParticipant.get().getTrip().getId()).isEqualTo(this.participant.getTrip().getId());
+  }
+
+  @Test
+  @DisplayName("findByIdAndTripId - Should return an optional empty if the participant is not found")
+  void findByIdAndTripIdReturnsEmptyByParticipantNotFound() {
+    this.entityManager.persist(this.trip);
+    this.entityManager.persist(this.participant);
+
+    UUID tripId = this.trip.getId();
+    UUID participantId = UUID.fromString("5f1b0d11-07a6-4a63-a5bf-381a09a784af");
+
+    Optional<Participant> foundParticipant = this.participantRepository.findByIdAndTripId(participantId, tripId);
+
+    assertThat(foundParticipant).isEmpty();
+  }
+
+  @Test
   @DisplayName("findAllAndTripId - Should return a Page of Participant with all trip participants")
   void findAllByTripIdReturnsAllParticipants() {
     LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
