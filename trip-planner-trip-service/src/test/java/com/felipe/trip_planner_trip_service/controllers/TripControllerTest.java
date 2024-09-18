@@ -735,7 +735,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.participantService, times(1)).getAllTripParticipants(tripId, "user1@email.com", 0);
-    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any(Page.class));
+    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any());
   }
 
   @Test
@@ -757,6 +757,77 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.participantService, times(1)).getAllTripParticipants(tripId, "user1@email.com", 0);
-    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any(Page.class));
+    verify(this.participantMapper, never()).toParticipantResponsePageDTO(any());
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should return a success response with ok status code and the removed participant")
+  void removeParticipantSuccess() throws Exception {
+    Participant participant = this.participants.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/participants/%s", BASE_URL, tripId, participant.getId());
+    var participantResponseDTO = new ParticipantResponseDTO(participant);
+
+    when(this.participantService.removeParticipant(tripId, participant.getId(), "user1@email.com"))
+      .thenReturn(participant);
+
+    this.mockMvc.perform(delete(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Participante removido com sucesso"))
+      .andExpect(jsonPath("$.data.removedParticipant.id").value(participantResponseDTO.id()))
+      .andExpect(jsonPath("$.data.removedParticipant.name").value(participantResponseDTO.name()))
+      .andExpect(jsonPath("$.data.removedParticipant.email").value(participantResponseDTO.email()))
+      .andExpect(jsonPath("$.data.removedParticipant.tripId").value(participantResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.removedParticipant.createdAt").value(participantResponseDTO.createdAt()));
+
+    verify(this.participantService, times(1)).removeParticipant(tripId, participant.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should return an error response with forbidden status code")
+  void removeParticipantFailsByAccessDenied() throws Exception {
+    Participant participant = this.participants.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/participants/%s", BASE_URL, tripId, participant.getId());
+
+    when(this.participantService.removeParticipant(tripId, participant.getId(), "user1@email.com"))
+      .thenThrow(new AccessDeniedException("Acesso negado: Você não tem permissão para remover este recurso"));
+
+    this.mockMvc.perform(delete(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+      .andExpect(jsonPath("$.message").value("Acesso negado: Você não tem permissão para remover este recurso"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.participantService, times(1)).removeParticipant(tripId, participant.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should return a RecordNotFoundException with not found status code")
+  void removeParticipantFailsByParticipantNotFound() throws Exception {
+    Participant participant = this.participants.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/participants/%s", BASE_URL, tripId, participant.getId());
+
+    when(this.participantService.removeParticipant(tripId, participant.getId(), "user1@email.com"))
+      .thenThrow(new RecordNotFoundException("Participante de id: '" + participant.getId() + "' não encontrado"));
+
+    this.mockMvc.perform(delete(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
+      .andExpect(jsonPath("$.message").value("Participante de id: '" + participant.getId() + "' não encontrado"))
+      .andExpect(jsonPath("$.data").doesNotExist());
+
+    verify(this.participantService, times(1)).removeParticipant(tripId, participant.getId(), "user1@email.com");
   }
 }

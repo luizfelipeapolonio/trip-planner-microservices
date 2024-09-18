@@ -235,5 +235,108 @@ public class ParticipantServiceTest {
     verify(this.tripRepository, times(1)).findById(tripId);
     verify(this.participantRepository, never()).findAllByTripId(any(UUID.class), any(Pageable.class));
   }
+
+  @Test
+  @DisplayName("removeParticipant - Should successfully remove a participant as the trip owner and return the deleted participant")
+  void removeParticipantByTripOwnerSuccess() {
+    Participant participant = this.participants.get(1);
+    String userEmail = "user1@email.com";
+
+    when(this.tripRepository.findById(this.trip.getId())).thenReturn(Optional.of(this.trip));
+    when(this.participantRepository.findByIdAndTripId(participant.getId(), this.trip.getId())).thenReturn(Optional.of(participant));
+
+    Participant deletedParticipant = this.participantService.removeParticipant(this.trip.getId(), participant.getId(), userEmail);
+
+    assertThat(deletedParticipant.getId()).isEqualTo(participant.getId());
+    assertThat(deletedParticipant.getName()).isEqualTo(participant.getName());
+    assertThat(deletedParticipant.getEmail()).isEqualTo(participant.getEmail());
+    assertThat(deletedParticipant.getTrip().getId()).isEqualTo(this.trip.getId());
+    assertThat(deletedParticipant.getCreatedAt()).isEqualTo(participant.getCreatedAt());
+
+    verify(this.tripRepository, times(1)).findById(this.trip.getId());
+    verify(this.participantRepository, times(1)).findByIdAndTripId(participant.getId(), this.trip.getId());
+    verify(this.participantRepository, times(1)).deleteById(participant.getId());
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should successfully remove a participant as the participant itself and return the deleted participant")
+  void removeParticipantByParticipantSuccess() {
+    Participant participant = this.participants.get(0);
+    String userEmail = "user2@email.com";
+
+    when(this.tripRepository.findById(this.trip.getId())).thenReturn(Optional.of(this.trip));
+    when(this.participantRepository.findByIdAndTripId(participant.getId(), this.trip.getId())).thenReturn(Optional.of(participant));
+
+    Participant deletedParticipant = this.participantService.removeParticipant(this.trip.getId(), participant.getId(), userEmail);
+
+    assertThat(deletedParticipant.getId()).isEqualTo(participant.getId());
+    assertThat(deletedParticipant.getName()).isEqualTo(participant.getName());
+    assertThat(deletedParticipant.getEmail()).isEqualTo(participant.getEmail());
+    assertThat(deletedParticipant.getTrip().getId()).isEqualTo(this.trip.getId());
+    assertThat(deletedParticipant.getCreatedAt()).isEqualTo(participant.getCreatedAt());
+
+    verify(this.tripRepository, times(1)).findById(this.trip.getId());
+    verify(this.participantRepository, times(1)).findByIdAndTripId(participant.getId(), this.trip.getId());
+    verify(this.participantRepository, times(1)).deleteById(participant.getId());
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should throw an AccessDeniedException if the user is not the trip owner or the trip participant")
+  void removeParticipantFailsByAccessDenied() {
+    Participant participant = this.participants.get(0);
+    String userEmail = "user3@email.com";
+
+    when(this.tripRepository.findById(this.trip.getId())).thenReturn(Optional.of(this.trip));
+    when(this.participantRepository.findByIdAndTripId(participant.getId(), this.trip.getId())).thenReturn(Optional.of(participant));
+
+    Exception thrown = catchException(() -> this.participantService.removeParticipant(this.trip.getId(), participant.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para remover este recurso");
+
+    verify(this.tripRepository, times(1)).findById(this.trip.getId());
+    verify(this.participantRepository, times(1)).findByIdAndTripId(participant.getId(), this.trip.getId());
+    verify(this.participantRepository, never()).deleteById(any());
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should throw a RecordNotFoundException if the trip is not found")
+  void removeParticipantFailsByTripNotFound() {
+    UUID participantId = this.participants.get(0).getId();
+    String userEmail = "user1@email.com";
+
+    when(this.tripRepository.findById(this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.participantService.removeParticipant(this.trip.getId(), participantId, userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Viagem de id: '%s' não encontrada", this.trip.getId());
+
+    verify(this.tripRepository, times(1)).findById(this.trip.getId());
+    verify(this.participantRepository, never()).findByIdAndTripId(participantId, this.trip.getId());
+    verify(this.participantRepository, never()).deleteById(any());
+  }
+
+  @Test
+  @DisplayName("removeParticipant - Should throw a RecordNotFoundException if the participant is not found")
+  void removeParticipantFailsByParticipantNotFound() {
+    UUID participantId = this.participants.get(0).getId();
+    String userEmail = "user1@email.com";
+
+    when(this.tripRepository.findById(this.trip.getId())).thenReturn(Optional.of(this.trip));
+    when(this.participantRepository.findByIdAndTripId(participantId, this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.participantService.removeParticipant(this.trip.getId(), participantId, userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Participante de id: '%s' não encontrado", participantId);
+
+    verify(this.tripRepository, times(1)).findById(this.trip.getId());
+    verify(this.participantRepository, times(1)).findByIdAndTripId(participantId, this.trip.getId());
+    verify(this.participantRepository, never()).deleteById(any());
+  }
 }
 
