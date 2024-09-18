@@ -15,6 +15,9 @@ public interface ParticipantRepository extends JpaRepository<Participant, UUID> 
   @Query("SELECT p FROM Participant p WHERE p.email=:email AND p.trip.id=:tripId")
   Optional<Participant> findByEmailAndTripId(@Param("email") String email, @Param("tripId") UUID tripId);
 
+  @Query("SELECT p FROM Participant p WHERE p.id=:id AND p.trip.id=:tripId")
+  Optional<Participant> findByIdAndTripId(@Param("id") UUID id, @Param("tripId") UUID tripId);
+
   @Query("SELECT p FROM Participant p WHERE p.trip.id=:tripId")
   Page<Participant> findAllByTripId(@Param("tripId") UUID tripId, Pageable pageable);
 }
