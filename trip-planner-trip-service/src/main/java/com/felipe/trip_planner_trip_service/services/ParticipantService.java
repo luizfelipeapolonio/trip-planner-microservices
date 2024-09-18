@@ -74,6 +74,20 @@ public class ParticipantService {
     return allParticipants;
   }
 
+  public Participant removeParticipant(UUID tripId, UUID participantId, String userEmail) {
+    Trip trip = this.tripRepository.findById(tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
+
+    Participant participant = this.participantRepository.findByIdAndTripId(participantId, tripId)
+      .orElseThrow(() -> new RecordNotFoundException("Participante de id: '" + participantId + "' não encontrado"));
+
+    if(!trip.getOwnerEmail().equals(userEmail) && !participant.getEmail().equals(userEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para remover este recurso");
+    }
+    this.participantRepository.deleteById(participant.getId());
+    return participant;
+  }
+
   private boolean isTripParticipant(List<Participant> participants, String userEmail) {
     Optional<Participant> tripParticipant = participants.stream()
       .filter(participant -> participant.getEmail().equals(userEmail))

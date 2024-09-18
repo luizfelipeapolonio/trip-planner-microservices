@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
+import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripCreateDTO;
@@ -235,6 +236,27 @@ public class TripController {
     response.setCode(HttpStatus.OK);
     response.setMessage("Todos os participantes da viagem de id: '" + tripId + "'");
     response.setData(participantPageDTO);
+    return response;
+  }
+
+  @DeleteMapping("/{tripId}/participants/{participantId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Map<String, ParticipantResponseDTO>> removeParticipant(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID participantId
+  ) {
+    Participant deletedParticipant = this.participantService.removeParticipant(tripId, participantId, userEmail);
+    ParticipantResponseDTO participantResponseDTO = new ParticipantResponseDTO(deletedParticipant);
+
+    Map<String, ParticipantResponseDTO> removedParticipantMap = new HashMap<>(1);
+    removedParticipantMap.put("removedParticipant", participantResponseDTO);
+
+    CustomResponseBody<Map<String, ParticipantResponseDTO>> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Participante removido com sucesso");
+    response.setData(removedParticipantMap);
     return response;
   }
 }
