@@ -99,6 +99,24 @@ public class TripController {
     return response;
   }
 
+  @GetMapping("/participant")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<TripPageResponseDTO> getAllTripsAuthUserIsParticipant(
+    @RequestHeader("userEmail") String userEmail,
+    @RequestParam(defaultValue = "0") int page
+  ) {
+    Page<Trip> allTrips = this.tripService.getAllTripsAuthenticatedUserIsParticipant(userEmail, page);
+    List<TripResponseDTO> tripDTOs = allTrips.stream().map(TripResponseDTO::new).toList();
+    TripPageResponseDTO tripPageDTO = new TripPageResponseDTO(tripDTOs, allTrips.getTotalElements(), allTrips.getTotalPages());
+
+    CustomResponseBody<TripPageResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as viagens que o usuário de e-mail: '" + userEmail + "' é um participante");
+    response.setData(tripPageDTO);
+    return response;
+  }
+
   @DeleteMapping
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<String> deleteAllTripsFromAuthUser(@RequestHeader("userEmail") String ownerEmail) {

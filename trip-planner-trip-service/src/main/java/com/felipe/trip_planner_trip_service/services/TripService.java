@@ -58,6 +58,11 @@ public class TripService {
     return this.tripRepository.findAllByOwnerEmail(ownerEmail, pagination);
   }
 
+  public Page<Trip> getAllTripsAuthenticatedUserIsParticipant(String userEmail, int pageNumber) {
+    Pageable pagination = PageRequest.of(pageNumber, 10);
+    return this.tripRepository.findAllByParticipantEmail(userEmail, pagination);
+  }
+
   public Trip getById(UUID tripId, String userEmail) {
     Trip trip = this.tripRepository.findById(tripId)
       .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + tripId + "' não encontrada"));
