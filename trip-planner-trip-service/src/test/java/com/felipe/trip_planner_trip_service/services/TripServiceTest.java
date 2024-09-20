@@ -171,6 +171,24 @@ public class TripServiceTest {
   }
 
   @Test
+  @DisplayName("getAllTripsAuthenticatedUserIsParticipant - Should successfully return a list with all trips that authenticated user is a participant")
+  void getAllTripsAuthenticatedUserIsParticipantSuccess() {
+    List<Trip> allTrips = List.of(this.trips.get(0), this.trips.get(1));
+    Page<Trip> allTripsPage = new PageImpl<>(allTrips);
+    Pageable pagination = PageRequest.of(0, 10);
+
+    when(this.tripRepository.findAllByParticipantEmail("user2@email.com", pagination)).thenReturn(allTripsPage);
+
+    Page<Trip> allReturnedTrips = this.tripService.getAllTripsAuthenticatedUserIsParticipant("user2@email.com", 0);
+
+    assertThat(allReturnedTrips.getTotalElements()).isEqualTo(2L);
+    assertThat(allReturnedTrips.getContent().stream().map(Trip::getId).toList())
+      .containsExactlyInAnyOrderElementsOf(allTrips.stream().map(Trip::getId).toList());
+
+    verify(this.tripRepository, times(1)).findAllByParticipantEmail("user2@email.com", pagination);
+  }
+
+  @Test
   @DisplayName("update - Should successfully update a trip and return it")
   void updateSuccess() {
     Trip trip = this.trips.get(0);

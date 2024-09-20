@@ -233,6 +233,32 @@ public class TripControllerTest {
   }
 
   @Test
+  @DisplayName("getAllTripsAuthUserIsParticipant - Should return a success response with ok status code and a list of trips")
+  void getAllTripsAuthUserIsParticipantSuccess() throws Exception {
+    Page<Trip> allTrips = new PageImpl<>(this.trips);
+    List<TripResponseDTO> tripResponseDTOs = allTrips.getContent().stream().map(TripResponseDTO::new).toList();
+    TripPageResponseDTO tripPageDTO = new TripPageResponseDTO(tripResponseDTOs, allTrips.getTotalElements(), allTrips.getTotalPages());
+
+    CustomResponseBody<TripPageResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as viagens que o usuário de e-mail: 'user2@email.com' é um participante");
+    response.setData(tripPageDTO);
+
+    String jsonResponseBody = this.objectMapper.writeValueAsString(response);
+
+    when(this.tripService.getAllTripsAuthenticatedUserIsParticipant("user2@email.com", 0)).thenReturn(allTrips);
+
+    this.mockMvc.perform(get(BASE_URL + "/participant")
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(content().json(jsonResponseBody));
+
+    verify(this.tripService, times(1)).getAllTripsAuthenticatedUserIsParticipant("user2@email.com", 0);
+  }
+
+  @Test
   @DisplayName("update - Should return a success response with ok status code and the updated trip")
   void updateSuccess() throws Exception {
     Trip trip = this.trips.get(0);
