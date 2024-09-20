@@ -21,9 +21,6 @@ public class Invite {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID code;
 
-  @Column(name = "user_id", nullable = false)
-  private UUID userId;
-
   @Column(nullable = false)
   private String username;
 
@@ -49,14 +46,6 @@ public class Invite {
 
   public void setCode(UUID code) {
     this.code = code;
-  }
-
-  public UUID getUserId() {
-    return this.userId;
-  }
-
-  public void setUserId(UUID userId) {
-    this.userId = userId;
   }
 
   public String getUsername() {

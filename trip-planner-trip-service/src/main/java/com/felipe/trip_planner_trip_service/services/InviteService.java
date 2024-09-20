@@ -50,7 +50,6 @@ public class InviteService {
 
     Invite newInvite = new Invite();
     newInvite.setTrip(trip);
-    newInvite.setUserId(UUID.fromString(userClientDTO.id()));
     newInvite.setUsername(userClientDTO.name());
     newInvite.setUserEmail(userClientDTO.email());
 
@@ -70,19 +69,14 @@ public class InviteService {
     return createdInvite.getUserEmail();
   }
 
-  public Invite validateInvite(String inviteCode, String userEmail, String userId) {
+  public Invite validateInvite(String inviteCode, String userEmail) {
     UUID convertedInviteCode = UUID.fromString(inviteCode);
-    UUID convertedUserId = UUID.fromString(userId);
     Optional<Invite> invite = this.inviteRepository.findByCodeAndIsValidTrue(convertedInviteCode);
 
-    if(invite.isEmpty() || !isInvitedParticipant(invite.get(), userEmail, convertedUserId)) {
+    if(invite.isEmpty() || !invite.get().getUserEmail().equals(userEmail)) {
       throw new InvalidInviteException();
     }
     return invite.get();
-  }
-
-  private boolean isInvitedParticipant(Invite invite, String userEmail, UUID userId) {
-    return invite.getUserEmail().equals(userEmail) && invite.getUserId().equals(userId);
   }
 
   private void checkForExistingInviteAndDeleteIt(String userEmail, UUID tripId) {

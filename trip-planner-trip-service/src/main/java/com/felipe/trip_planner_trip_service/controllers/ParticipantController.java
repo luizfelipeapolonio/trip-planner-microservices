@@ -29,11 +29,10 @@ public class ParticipantController {
   @PostMapping("/confirm")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<AddParticipantResponseDTO> addParticipant(
-    @RequestHeader("userId") String participantId,
     @RequestHeader("userEmail") String participantEmail,
     @RequestBody AddParticipantDTO participantDTO
   ) {
-    Participant addedParticipant = this.participantService.addParticipant(participantDTO, participantEmail, participantId);
+    Participant addedParticipant = this.participantService.addParticipant(participantDTO, participantEmail);
     ParticipantResponseInfoDTO participantInfoDTO = new ParticipantResponseInfoDTO(addedParticipant);
     ParticipantResponseTripInfoDTO participantTripInfoDTO = new ParticipantResponseTripInfoDTO(addedParticipant.getTrip());
     AddParticipantResponseDTO participantResponseDTO = new AddParticipantResponseDTO(participantInfoDTO, participantTripInfoDTO);

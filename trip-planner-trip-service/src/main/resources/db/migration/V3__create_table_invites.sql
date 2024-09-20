@@ -1,7 +1,6 @@
 CREATE TABLE invites (
     code       UUID         NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
     trip_id    UUID         NOT NULL,
-    user_id    UUID         NOT NULL,
     username   VARCHAR(100) NOT NULL,
     user_email VARCHAR(255) NOT NULL,
     is_valid   BOOLEAN      NOT NULL DEFAULT TRUE,

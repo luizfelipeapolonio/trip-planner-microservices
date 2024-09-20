@@ -41,13 +41,12 @@ public class ParticipantService {
     this.inviteRepository = inviteRepository;
   }
 
-  public Participant addParticipant(AddParticipantDTO addParticipantDTO, String participantEmail, String participantId) {
-    Invite validatedInvite = this.inviteService.validateInvite(addParticipantDTO.inviteCode(), participantEmail, participantId);
+  public Participant addParticipant(AddParticipantDTO addParticipantDTO, String participantEmail) {
+    Invite validatedInvite = this.inviteService.validateInvite(addParticipantDTO.inviteCode(), participantEmail);
     Trip trip = this.tripRepository.findById(validatedInvite.getTrip().getId())
       .orElseThrow(() -> new RecordNotFoundException("Viagem de id: '" + validatedInvite.getTrip().getId() + "' não encontrada"));
 
     Participant newParticipant = new Participant();
-    newParticipant.setId(validatedInvite.getUserId());
     newParticipant.setName(validatedInvite.getUsername());
     newParticipant.setEmail(validatedInvite.getUserEmail());
     newParticipant.setTrip(trip);
