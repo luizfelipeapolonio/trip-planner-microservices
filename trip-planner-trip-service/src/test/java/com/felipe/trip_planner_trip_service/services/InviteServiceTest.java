@@ -75,7 +75,6 @@ public class InviteServiceTest {
 
     Invite newInvite = new Invite();
     newInvite.setCode(UUID.fromString("62dac895-a1f0-4140-b52b-4c12cb82c6ff"));
-    newInvite.setUserId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
     newInvite.setUsername("User 2");
     newInvite.setUserEmail("user2@email.com");
     newInvite.setCreatedAt(mockDateTime);
@@ -90,7 +89,7 @@ public class InviteServiceTest {
   void inviteSuccess() {
     InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
     UserClientDTO userClientDTO = new UserClientDTO(
-      this.invite.getUserId().toString(),
+      "77b52d55-3430-4829-a8a4-64ee68336a35",
       "User 2",
       this.invite.getUserEmail(),
       LocalDateTime.parse("2024-01-01T12:00:00.123456"),
@@ -122,7 +121,7 @@ public class InviteServiceTest {
     LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
     InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
     UserClientDTO userClientDTO = new UserClientDTO(
-      this.invite.getUserId().toString(),
+      "77b52d55-3430-4829-a8a4-64ee68336a35",
       "User 2",
       this.invite.getUserEmail(),
       LocalDateTime.parse("2024-01-01T12:00:00.123456"),
@@ -131,7 +130,6 @@ public class InviteServiceTest {
 
     Invite existingInvite = new Invite();
     existingInvite.setCode(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
-    existingInvite.setUserId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
     existingInvite.setUsername("User 2");
     existingInvite.setUserEmail("user2@email.com");
     existingInvite.setCreatedAt(mockDateTime);
@@ -151,7 +149,6 @@ public class InviteServiceTest {
 
     assertThat(invitedUserEmail).isEqualTo(this.invite.getUserEmail());
     assertThat(inviteCapture.getValue().getCode()).isEqualTo(existingInvite.getCode());
-    assertThat(inviteCapture.getValue().getUserId()).isEqualTo(existingInvite.getUserId());
     assertThat(inviteCapture.getValue().getUsername()).isEqualTo(existingInvite.getUsername());
     assertThat(inviteCapture.getValue().getUserEmail()).isEqualTo(existingInvite.getUserEmail());
     assertThat(inviteCapture.getValue().getCreatedAt()).isEqualTo(existingInvite.getCreatedAt());
@@ -180,7 +177,7 @@ public class InviteServiceTest {
 
     InviteParticipantDTO inviteDTO = new InviteParticipantDTO("user2@email.com");
     UserClientDTO userClientDTO = new UserClientDTO(
-      this.invite.getUserId().toString(),
+      "77b52d55-3430-4829-a8a4-64ee68336a35",
       "User 2",
       this.invite.getUserEmail(),
       LocalDateTime.parse("2024-01-01T12:00:00.123456"),
@@ -209,15 +206,13 @@ public class InviteServiceTest {
   @DisplayName("validateInvite - Should successfully validate an invite and not throw any exception")
   void validateInviteSuccess() {
     String inviteCode = this.invite.getCode().toString();
-    String userId = this.invite.getUserId().toString();
 
     when(this.inviteRepository.findByCodeAndIsValidTrue(this.invite.getCode())).thenReturn(Optional.of(this.invite));
 
-    Invite validatedInvite = this.inviteService.validateInvite(inviteCode, "user2@email.com", userId);
+    Invite validatedInvite = this.inviteService.validateInvite(inviteCode, "user2@email.com");
 
     assertThat(validatedInvite.getCode()).isEqualTo(this.invite.getCode());
     assertThat(validatedInvite.getTrip().getId()).isEqualTo(this.invite.getTrip().getId());
-    assertThat(validatedInvite.getUserId()).isEqualTo(this.invite.getUserId());
     assertThat(validatedInvite.getUsername()).isEqualTo(this.invite.getUsername());
     assertThat(validatedInvite.getUserEmail()).isEqualTo(this.invite.getUserEmail());
     assertThat(validatedInvite.getCreatedAt()).isEqualTo(this.invite.getCreatedAt());
@@ -229,11 +224,10 @@ public class InviteServiceTest {
   @DisplayName("validateInvite - Should throw an InvalidInviteException if an invite is not found")
   void validateInviteFailsByInviteIsNotFound() {
     String inviteCode = this.invite.getCode().toString();
-    String userId = this.invite.getUserId().toString();
 
     when(this.inviteRepository.findByCodeAndIsValidTrue(this.invite.getCode())).thenReturn(Optional.empty());
 
-    Exception thrown = catchException(() -> this.inviteService.validateInvite(inviteCode, "user2@email.com", userId));
+    Exception thrown = catchException(() -> this.inviteService.validateInvite(inviteCode, "user2@email.com"));
 
     assertThat(thrown)
       .isExactlyInstanceOf(InvalidInviteException.class)
@@ -246,47 +240,11 @@ public class InviteServiceTest {
   @DisplayName("validateInvite - Should throw an InvalidInviteException if the the given user e-mail is different from the invited participant e-mail")
   void validateInviteFailsByInvalidUserEmail() {
     String inviteCode = this.invite.getCode().toString();
-    String userId = this.invite.getUserId().toString();
     String userEmail = "user3@email.com";
 
     when(this.inviteRepository.findByCodeAndIsValidTrue(this.invite.getCode())).thenReturn(Optional.of(this.invite));
 
-    Exception thrown = catchException(() -> this.inviteService.validateInvite(inviteCode, userEmail, userId));
-
-    assertThat(thrown)
-      .isExactlyInstanceOf(InvalidInviteException.class)
-      .hasMessage("Código de confirmação inválido");
-
-    verify(this.inviteRepository, times(1)).findByCodeAndIsValidTrue(this.invite.getCode());
-  }
-
-  @Test
-  @DisplayName("validateInvite - Should throw an InvalidInviteException if the given user id is different from the invited participant id")
-  void validateInviteFailsByInvalidUserId() {
-    String inviteCode = this.invite.getCode().toString();
-    String userId = UUID.fromString("5f1b0d11-07a6-4a63-a5bf-381a09a784af").toString();
-
-    when(this.inviteRepository.findByCodeAndIsValidTrue(this.invite.getCode())).thenReturn(Optional.of(this.invite));
-
-    Exception thrown = catchException(() -> this.inviteService.validateInvite(inviteCode, "user2@email.com", userId));
-
-    assertThat(thrown)
-      .isExactlyInstanceOf(InvalidInviteException.class)
-      .hasMessage("Código de confirmação inválido");
-
-    verify(this.inviteRepository, times(1)).findByCodeAndIsValidTrue(this.invite.getCode());
-  }
-
-  @Test
-  @DisplayName("validateInvite - Should throw an InvalidInviteException if the given user email and user id is different from invited participant email and id")
-  void validateInviteFailsByInvalidUserEmailAndUserId() {
-    String inviteCode = this.invite.getCode().toString();
-    String userEmail = "user3@email.com";
-    String userId = UUID.fromString("5f1b0d11-07a6-4a63-a5bf-381a09a784af").toString();
-
-    when(this.inviteRepository.findByCodeAndIsValidTrue(this.invite.getCode())).thenReturn(Optional.of(this.invite));
-
-    Exception thrown = catchException(() -> this.inviteService.validateInvite(inviteCode, userEmail, userId));
+    Exception thrown = catchException(() -> this.inviteService.validateInvite(inviteCode, userEmail));
 
     assertThat(thrown)
       .isExactlyInstanceOf(InvalidInviteException.class)

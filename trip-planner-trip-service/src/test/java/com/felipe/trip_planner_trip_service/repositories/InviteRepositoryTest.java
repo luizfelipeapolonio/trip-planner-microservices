@@ -24,10 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class InviteRepositoryTest {
 
   @Autowired
-  private EntityManager entityManager;
+  EntityManager entityManager;
 
   @Autowired
-  private InviteRepository inviteRepository;
+  InviteRepository inviteRepository;
 
   private Trip trip;
   private List<Invite> invites;
@@ -48,14 +48,12 @@ public class InviteRepositoryTest {
 
     Invite invite1 = new Invite();
     invite1.setTrip(trip);
-    invite1.setUserId(UUID.fromString("62dac895-a1f0-4140-b52b-4c12cb82c6ff"));
     invite1.setUsername("User 2");
     invite1.setUserEmail("user2@email.com");
     invite1.setCreatedAt(mockDateTime);
 
     Invite invite2 = new Invite();
     invite2.setTrip(trip);
-    invite2.setUserId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
     invite2.setUsername("User 2");
     invite2.setUserEmail("user2@email.com");
     invite2.setCreatedAt(mockDateTime);
@@ -63,7 +61,6 @@ public class InviteRepositoryTest {
 
     Invite invite3 = new Invite();
     invite3.setTrip(trip);
-    invite3.setUserId(UUID.fromString("b610a230-e186-4913-b260-c136f357c75d"));
     invite3.setUsername("User 3");
     invite3.setUserEmail("user3@email.com");
     invite3.setCreatedAt(mockDateTime);
@@ -88,7 +85,6 @@ public class InviteRepositoryTest {
     assertThat(foundInvite.get().getCode()).isEqualTo(invite.getCode());
     assertThat(foundInvite.get().isValid()).isTrue();
     assertThat(foundInvite.get().getTrip().getId()).isEqualTo(this.trip.getId());
-    assertThat(foundInvite.get().getUserId()).isEqualTo(invite.getUserId());
     assertThat(foundInvite.get().getUsername()).isEqualTo(invite.getUsername());
     assertThat(foundInvite.get().getUserEmail()).isEqualTo(invite.getUserEmail());
     assertThat(foundInvite.get().getCreatedAt()).isEqualTo(invite.getCreatedAt());
@@ -140,7 +136,6 @@ public class InviteRepositoryTest {
     assertThat(foundInvite.get().getCode()).isEqualTo(invite.getCode());
     assertThat(foundInvite.get().isValid()).isTrue();
     assertThat(foundInvite.get().getTrip().getId()).isEqualTo(this.trip.getId());
-    assertThat(foundInvite.get().getUserId()).isEqualTo(invite.getUserId());
     assertThat(foundInvite.get().getUsername()).isEqualTo(invite.getUsername());
     assertThat(foundInvite.get().getUserEmail()).isEqualTo(invite.getUserEmail());
     assertThat(foundInvite.get().getCreatedAt()).isEqualTo(invite.getCreatedAt());

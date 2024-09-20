@@ -75,7 +75,6 @@ public class ParticipantServiceTest {
 
     Invite invite = new Invite();
     invite.setCode(UUID.fromString("47875e77-5ab5-4386-b266-b8f589bace5a"));
-    invite.setUserId(UUID.fromString("62dac895-a1f0-4140-b52b-4c12cb82c6ff"));
     invite.setUserEmail("user2@email.com");
     invite.setCreatedAt(mockDateTime);
     invite.setTrip(trip);
@@ -104,14 +103,13 @@ public class ParticipantServiceTest {
   void addParticipantSuccess() {
     Participant participant = this.participants.get(0);
     String userEmail = participant.getEmail();
-    String userId = participant.getId().toString();
     AddParticipantDTO participantDTO = new AddParticipantDTO("5f1b0d11-07a6-4a63-a5bf-381a09a784af");
 
-    when(this.inviteService.validateInvite(participantDTO.inviteCode(), userEmail, userId)).thenReturn(this.invite);
+    when(this.inviteService.validateInvite(participantDTO.inviteCode(), userEmail)).thenReturn(this.invite);
     when(this.tripRepository.findById(this.invite.getTrip().getId())).thenReturn(Optional.of(this.trip));
     when(this.participantRepository.save(any(Participant.class))).thenReturn(participant);
 
-    Participant addedParticipant = this.participantService.addParticipant(participantDTO, userEmail, userId);
+    Participant addedParticipant = this.participantService.addParticipant(participantDTO, userEmail);
 
     assertThat(addedParticipant.getId()).isEqualTo(participant.getId());
     assertThat(addedParticipant.getName()).isEqualTo(participant.getName());
@@ -119,7 +117,7 @@ public class ParticipantServiceTest {
     assertThat(addedParticipant.getTrip().getId()).isEqualTo(participant.getTrip().getId());
     assertThat(addedParticipant.getCreatedAt()).isEqualTo(participant.getCreatedAt());
 
-    verify(this.inviteService, times(1)).validateInvite(participantDTO.inviteCode(), userEmail, userId);
+    verify(this.inviteService, times(1)).validateInvite(participantDTO.inviteCode(), userEmail);
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, times(1)).save(any(Participant.class));
     verify(this.inviteRepository, times(1)).delete(this.invite);
@@ -130,19 +128,18 @@ public class ParticipantServiceTest {
   void addParticipantFailsByTripNotFound() {
     Participant participant = this.participants.get(0);
     String userEmail = participant.getEmail();
-    String userId = participant.getId().toString();
     AddParticipantDTO participantDTO = new AddParticipantDTO("5f1b0d11-07a6-4a63-a5bf-381a09a784af");
 
-    when(this.inviteService.validateInvite(participantDTO.inviteCode(), userEmail, userId)).thenReturn(this.invite);
+    when(this.inviteService.validateInvite(participantDTO.inviteCode(), userEmail)).thenReturn(this.invite);
     when(this.tripRepository.findById(this.invite.getTrip().getId())).thenReturn(Optional.empty());
 
-    Exception thrown = catchException(() -> this.participantService.addParticipant(participantDTO, userEmail, userId));
+    Exception thrown = catchException(() -> this.participantService.addParticipant(participantDTO, userEmail));
 
     assertThat(thrown)
       .isExactlyInstanceOf(RecordNotFoundException.class)
       .hasMessage("Viagem de id: '%s' não encontrada", this.trip.getId());
 
-    verify(this.inviteService, times(1)).validateInvite(participantDTO.inviteCode(), userEmail, userId);
+    verify(this.inviteService, times(1)).validateInvite(participantDTO.inviteCode(), userEmail);
     verify(this.tripRepository, times(1)).findById(this.invite.getTrip().getId());
     verify(this.participantRepository, never()).save(any(Participant.class));
     verify(this.inviteRepository, never()).delete(any(Invite.class));
@@ -339,4 +336,3 @@ public class ParticipantServiceTest {
     verify(this.participantRepository, never()).deleteById(any());
   }
 }
-

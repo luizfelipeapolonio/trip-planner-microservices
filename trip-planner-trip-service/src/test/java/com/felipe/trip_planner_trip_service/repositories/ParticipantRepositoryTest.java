@@ -49,7 +49,6 @@ public class ParticipantRepositoryTest {
     trip.setUpdatedAt(mockDateTime);
 
     Participant participant = new Participant();
-    participant.setId(UUID.fromString("62dac895-a1f0-4140-b52b-4c12cb82c6ff"));
     participant.setName("User 2");
     participant.setEmail("user2@email.com");
     participant.setCreatedAt(mockDateTime);
@@ -133,7 +132,6 @@ public class ParticipantRepositoryTest {
     LocalDateTime mockDateTime = LocalDateTime.parse("2024-01-01T12:00:00.123456");
 
     Participant participant2 = new Participant();
-    participant2.setId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
     participant2.setName("User 3");
     participant2.setEmail("user3@email.com");
     participant2.setCreatedAt(mockDateTime);

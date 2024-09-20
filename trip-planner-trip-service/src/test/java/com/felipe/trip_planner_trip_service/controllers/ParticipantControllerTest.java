@@ -47,13 +47,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ParticipantControllerTest {
 
   @Autowired
-  private MockMvc mockMvc;
+  MockMvc mockMvc;
 
   @Autowired
-  private ObjectMapper objectMapper;
+  ObjectMapper objectMapper;
 
   @MockBean
-  private ParticipantService participantService;
+  ParticipantService participantService;
 
   private Participant participant;
   private final String BASE_URL = "/api/participants";
@@ -87,21 +87,19 @@ public class ParticipantControllerTest {
   @DisplayName("addParticipant - Should return a success response with ok status code and the added participant info")
   void addParticipantSuccess() throws Exception {
     String userEmail = this.participant.getEmail();
-    String userId = this.participant.getId().toString();
     AddParticipantDTO participantDTO = new AddParticipantDTO("5f1b0d11-07a6-4a63-a5bf-381a09a784af");
     String jsonBody = this.objectMapper.writeValueAsString(participantDTO);
     var participantInfoDTO = new ParticipantResponseInfoDTO(this.participant);
     var participantTripInfoDTO = new ParticipantResponseTripInfoDTO(this.participant.getTrip());
     var participantResponseDTO = new AddParticipantResponseDTO(participantInfoDTO, participantTripInfoDTO);
 
-    when(this.participantService.addParticipant(participantDTO, userEmail, userId)).thenReturn(this.participant);
+    when(this.participantService.addParticipant(participantDTO, userEmail)).thenReturn(this.participant);
 
     this.mockMvc.perform(post(BASE_URL + "/confirm")
       .contentType(MediaType.APPLICATION_JSON)
       .content(jsonBody)
       .accept(MediaType.APPLICATION_JSON)
-      .header("userEmail", userEmail)
-      .header("userId", userId))
+      .header("userEmail", userEmail))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
       .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
@@ -114,57 +112,53 @@ public class ParticipantControllerTest {
       .andExpect(jsonPath("$.data.trip.startsAt").value(participantResponseDTO.trip().startsAt()))
       .andExpect(jsonPath("$.data.trip.endsAt").value(participantResponseDTO.trip().endsAt()));
 
-    verify(this.participantService, times(1)).addParticipant(participantDTO, userEmail, userId);
+    verify(this.participantService, times(1)).addParticipant(participantDTO, userEmail);
   }
 
   @Test
   @DisplayName("addParticipant - Should return an error response with not found status code")
   void addParticipantFailsByTripNotFound() throws Exception {
     String userEmail = this.participant.getEmail();
-    String userId = this.participant.getId().toString();
     AddParticipantDTO participantDTO = new AddParticipantDTO("5f1b0d11-07a6-4a63-a5bf-381a09a784af");
     String jsonBody = this.objectMapper.writeValueAsString(participantDTO);
 
-    when(this.participantService.addParticipant(participantDTO, userEmail, userId))
+    when(this.participantService.addParticipant(participantDTO, userEmail))
       .thenThrow(new RecordNotFoundException("Viagem de id: '" + this.participant.getTrip().getId()  +"' não encontrada"));
 
     this.mockMvc.perform(post(BASE_URL + "/confirm")
       .contentType(MediaType.APPLICATION_JSON)
       .content(jsonBody)
       .accept(MediaType.APPLICATION_JSON)
-      .header("userEmail", userEmail)
-      .header("userId", userId))
+      .header("userEmail", userEmail))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
       .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
       .andExpect(jsonPath("$.message").value("Viagem de id: '" + this.participant.getTrip().getId() + "' não encontrada"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.participantService, times(1)).addParticipant(participantDTO, userEmail, userId);
+    verify(this.participantService, times(1)).addParticipant(participantDTO, userEmail);
   }
 
   @Test
   @DisplayName("addParticipant - Should return an error response with bad request status code")
   void addParticipantFailsByInvalidInvite() throws Exception {
     String userEmail = this.participant.getEmail();
-    String userId = this.participant.getId().toString();
     AddParticipantDTO participantDTO = new AddParticipantDTO("5f1b0d11-07a6-4a63-a5bf-381a09a784af");
     String jsonBody = this.objectMapper.writeValueAsString(participantDTO);
 
-    when(this.participantService.addParticipant(participantDTO, userEmail, userId)).thenThrow(new InvalidInviteException());
+    when(this.participantService.addParticipant(participantDTO, userEmail)).thenThrow(new InvalidInviteException());
 
     this.mockMvc.perform(post(BASE_URL + "/confirm")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(jsonBody)
-        .accept(MediaType.APPLICATION_JSON)
-        .header("userEmail", userEmail)
-        .header("userId", userId))
+      .contentType(MediaType.APPLICATION_JSON)
+      .content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", userEmail))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status").value(ResponseConditionStatus.ERROR.getValue()))
       .andExpect(jsonPath("$.code").value(HttpStatus.BAD_REQUEST.value()))
       .andExpect(jsonPath("$.message").value("Código de confirmação inválido"))
       .andExpect(jsonPath("$.data").doesNotExist());
 
-    verify(this.participantService, times(1)).addParticipant(participantDTO, userEmail, userId);
+    verify(this.participantService, times(1)).addParticipant(participantDTO, userEmail);
   }
 }
