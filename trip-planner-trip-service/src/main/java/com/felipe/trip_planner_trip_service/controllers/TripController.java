@@ -2,6 +2,8 @@ package com.felipe.trip_planner_trip_service.controllers;
 
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
@@ -50,19 +52,22 @@ public class TripController {
   private final ParticipantService participantService;
   private final ParticipantMapper participantMapper;
   private final ActivityService activityService;
+  private final ActivityMapper activityMapper;
 
   public TripController(
     TripService tripService,
     InviteService inviteService,
     ParticipantService participantService,
     ParticipantMapper participantMapper,
-    ActivityService activityService
+    ActivityService activityService,
+    ActivityMapper activityMapper
   ) {
     this.tripService = tripService;
     this.inviteService = inviteService;
     this.participantService = participantService;
     this.participantMapper = participantMapper;
     this.activityService = activityService;
+    this.activityMapper = activityMapper;
   }
 
   @PostMapping
@@ -158,9 +163,16 @@ public class TripController {
   ) {
     Trip trip = this.tripService.getById(tripId, userEmail);
     Page<Participant> participants = this.participantService.getAllTripParticipants(tripId, userEmail, 0);
+    Page<Activity> activities = this.activityService.getAllTripActivities(tripId, userEmail, 0);
+
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
     ParticipantResponsePageDTO participantsPageDTO = this.participantMapper.toParticipantResponsePageDTO(participants);
-    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(tripResponseDTO, new TripExtraInfoResponseDTO(participantsPageDTO));
+    ActivityResponsePageDTO activitiesPageDTO = this.activityMapper.toActivityResponsePageDTO(activities);
+
+    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(
+      tripResponseDTO,
+      new TripExtraInfoResponseDTO(participantsPageDTO, activitiesPageDTO)
+    );
 
     CustomResponseBody<TripFullResponseDTO> response = new CustomResponseBody<>();
     response.setStatus(ResponseConditionStatus.SUCCESS);
@@ -287,6 +299,24 @@ public class TripController {
     response.setCode(HttpStatus.CREATED);
     response.setMessage("Atividade criada com sucesso");
     response.setData(activityResponseDTO);
+    return response;
+  }
+
+  @GetMapping("/{tripId}/activities")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<ActivityResponsePageDTO> getAllTripActivities(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @RequestParam(defaultValue = "0") int page
+  ) {
+    Page<Activity> allActivities = this.activityService.getAllTripActivities(tripId, userEmail, page);
+    ActivityResponsePageDTO activityPageDTO = this.activityMapper.toActivityResponsePageDTO(allActivities);
+
+    CustomResponseBody<ActivityResponsePageDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as atividades da viagem de id: '" + tripId + "'");
+    response.setData(activityPageDTO);
     return response;
   }
 }
