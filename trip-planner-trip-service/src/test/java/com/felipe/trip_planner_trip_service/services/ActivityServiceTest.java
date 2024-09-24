@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -61,7 +65,14 @@ public class ActivityServiceTest {
     activity1.setTrip(trip);
     activity1.setCreatedAt(mockDateTime);
 
-    this.activities = List.of(activity1);
+    Activity activity2 = new Activity();
+    activity2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
+    activity2.setDescription("Atividade 2");
+    activity2.setOwnerEmail("user2@email.com");
+    activity2.setTrip(trip);
+    activity2.setCreatedAt(mockDateTime);
+
+    this.activities = List.of(activity1, activity2);
     this.trip = trip;
   }
 
@@ -84,5 +95,25 @@ public class ActivityServiceTest {
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), "user2@email.com");
     verify(this.activityRepository, times(1)).save(any(Activity.class));
+  }
+
+  @Test
+  @DisplayName("getAllTripActivities - Should successfully get all activities from a trip and return a page of activities")
+  void getAllTripActivitiesSuccess() {
+    Page<Activity> allActivities = new PageImpl<>(this.activities);
+    String userEmail = "user2@email.com";
+    Pageable pagination = PageRequest.of(0, 10);
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findAllByTripId(this.trip.getId(), pagination)).thenReturn(allActivities);
+
+    Page<Activity> allTripActivities = this.activityService.getAllTripActivities(this.trip.getId(), userEmail, 0);
+
+    assertThat(allTripActivities.getTotalElements()).isEqualTo(allActivities.getTotalElements());
+    assertThat(allTripActivities.getContent())
+      .allSatisfy(activity -> assertThat(activity.getTrip().getId()).isEqualTo(this.trip.getId()));
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findAllByTripId(this.trip.getId(), pagination);
   }
 }

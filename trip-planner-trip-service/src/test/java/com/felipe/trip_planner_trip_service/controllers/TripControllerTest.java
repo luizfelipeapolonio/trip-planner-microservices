@@ -3,6 +3,8 @@ package com.felipe.trip_planner_trip_service.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
@@ -96,6 +98,9 @@ public class TripControllerTest {
   @SpyBean
   ParticipantMapper participantMapper;
 
+  @SpyBean
+  ActivityMapper activityMapper;
+
   private List<Trip> trips;
   private List<Participant> participants;
   private List<Activity> activities;
@@ -158,9 +163,16 @@ public class TripControllerTest {
     activity1.setTrip(trip);
     activity1.setCreatedAt(mockDateTime);
 
+    Activity activity2 = new Activity();
+    activity2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
+    activity2.setDescription("Atividade 2");
+    activity2.setOwnerEmail("user2@email.com");
+    activity2.setTrip(trip);
+    activity2.setCreatedAt(mockDateTime);
+
     this.trips = List.of(trip, trip2, trip3);
     this.participants = List.of(participant, participant2);
-    this.activities = List.of(activity1);
+    this.activities = List.of(activity1, activity2);
   }
 
   @Test
@@ -364,8 +376,14 @@ public class TripControllerTest {
     String userEmail = "user1@email.com";
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
     Page<Participant> participants = new PageImpl<>(this.participants);
+    Page<Activity> activities = new PageImpl<>(this.activities);
+
     var participantPageDTO = this.participantMapper.toParticipantResponsePageDTO(participants);
-    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(tripResponseDTO, new TripExtraInfoResponseDTO(participantPageDTO));
+    var activitiesPageDTO = this.activityMapper.toActivityResponsePageDTO(activities);
+    TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(
+      tripResponseDTO,
+      new TripExtraInfoResponseDTO(participantPageDTO, activitiesPageDTO)
+    );
 
     CustomResponseBody<TripFullResponseDTO> response = new CustomResponseBody<>();
     response.setStatus(ResponseConditionStatus.SUCCESS);
@@ -377,6 +395,7 @@ public class TripControllerTest {
 
     when(this.tripService.getById(trip.getId(), userEmail)).thenReturn(trip);
     when(this.participantService.getAllTripParticipants(trip.getId(), userEmail, 0)).thenReturn(participants);
+    when(this.activityService.getAllTripActivities(trip.getId(), userEmail, 0)).thenReturn(activities);
 
     this.mockMvc.perform(get(BASE_URL + "/" + trip.getId())
       .accept(MediaType.APPLICATION_JSON)
@@ -902,5 +921,42 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
 
     verify(this.activityService, times(1)).create(trip.getId(), "user2@email.com", activityDTO);
+  }
+
+  @Test
+  @DisplayName("getAllTripActivities - Should return a success response with ok status code and a page of activities")
+  void getAllTripActivitiesSuccess() throws Exception {
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/activities?page=%d", BASE_URL, tripId, 0);
+    Page<Activity> allActivities = new PageImpl<>(this.activities);
+    List<ActivityResponseDTO> activityResponseDTOs = allActivities.getContent()
+      .stream()
+      .map(ActivityResponseDTO::new)
+      .toList();
+    var activityResponsePageDTO = new ActivityResponsePageDTO(
+      activityResponseDTOs,
+      allActivities.getTotalElements(),
+      allActivities.getTotalPages()
+    );
+
+    CustomResponseBody<ActivityResponsePageDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as atividades da viagem de id: '" + tripId + "'");
+    response.setData(activityResponsePageDTO);
+
+    String jsonResponseBody = this.objectMapper.writeValueAsString(response);
+
+    when(this.activityService.getAllTripActivities(tripId, "user2@email.com", 0)).thenReturn(allActivities);
+    when(this.activityMapper.toActivityResponsePageDTO(allActivities)).thenReturn(activityResponsePageDTO);
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(content().json(jsonResponseBody));
+
+    verify(this.activityService, times(1)).getAllTripActivities(tripId, "user2@email.com", 0);
+    verify(this.activityMapper, times(1)).toActivityResponsePageDTO(allActivities);
   }
 }

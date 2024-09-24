@@ -1,8 +1,7 @@
-package com.felipe.trip_planner_trip_service.dtos.mapper;
+package com.felipe.trip_planner_trip_service.dtos.participant.mapper;
 
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
-import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
 import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import org.junit.jupiter.api.BeforeEach;
