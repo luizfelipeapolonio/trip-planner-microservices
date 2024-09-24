@@ -1,6 +1,8 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
@@ -15,8 +17,10 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
+import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
+import com.felipe.trip_planner_trip_service.services.ActivityService;
 import com.felipe.trip_planner_trip_service.services.InviteService;
 import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.services.TripService;
@@ -86,11 +90,15 @@ public class TripControllerTest {
   @MockBean
   ParticipantService participantService;
 
+  @MockBean
+  ActivityService activityService;
+
   @SpyBean
   ParticipantMapper participantMapper;
 
   private List<Trip> trips;
   private List<Participant> participants;
+  private List<Activity> activities;
   private final String BASE_URL = "/api/trips";
 
   @BeforeEach
@@ -143,8 +151,16 @@ public class TripControllerTest {
     participant2.setCreatedAt(mockDateTime);
     participant2.setTrip(trip);
 
+    Activity activity1 = new Activity();
+    activity1.setId(UUID.fromString("024c61bd-5bbf-445b-9c97-ff0be373d96f"));
+    activity1.setDescription("Atividade 1");
+    activity1.setOwnerEmail("user2@email.com");
+    activity1.setTrip(trip);
+    activity1.setCreatedAt(mockDateTime);
+
     this.trips = List.of(trip, trip2, trip3);
     this.participants = List.of(participant, participant2);
+    this.activities = List.of(activity1);
   }
 
   @Test
@@ -855,5 +871,36 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").doesNotExist());
 
     verify(this.participantService, times(1)).removeParticipant(tripId, participant.getId(), "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("createActivity - Should return a success response with created status code and the created activity")
+  void createActivitySuccess() throws Exception {
+    Activity activity = this.activities.get(0);
+    Trip trip = this.trips.get(0);
+    ActivityCreateDTO activityDTO = new ActivityCreateDTO("Atividade 1");
+    ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(activity);
+
+    String url = String.format("%s/%s/activities", BASE_URL, trip.getId());
+    String jsonBody = this.objectMapper.writeValueAsString(activityDTO);
+
+    when(this.activityService.create(trip.getId(), "user2@email.com", activityDTO)).thenReturn(activity);
+
+    this.mockMvc.perform(post(url)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.CREATED.value()))
+      .andExpect(jsonPath("$.message").value("Atividade criada com sucesso"))
+      .andExpect(jsonPath("$.data.id").value(activityResponseDTO.id()))
+      .andExpect(jsonPath("$.data.description").value(activityResponseDTO.description()))
+      .andExpect(jsonPath("$.data.tripId").value(activityResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(activityResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
+
+    verify(this.activityService, times(1)).create(trip.getId(), "user2@email.com", activityDTO);
   }
 }
