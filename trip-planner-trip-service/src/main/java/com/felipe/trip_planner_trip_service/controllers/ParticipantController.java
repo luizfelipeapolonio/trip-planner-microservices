@@ -8,6 +8,7 @@ import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,7 +31,7 @@ public class ParticipantController {
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<AddParticipantResponseDTO> addParticipant(
     @RequestHeader("userEmail") String participantEmail,
-    @RequestBody AddParticipantDTO participantDTO
+    @RequestBody @Valid AddParticipantDTO participantDTO
   ) {
     Participant addedParticipant = this.participantService.addParticipant(participantDTO, participantEmail);
     ParticipantResponseInfoDTO participantInfoDTO = new ParticipantResponseInfoDTO(addedParticipant);
