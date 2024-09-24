@@ -1,5 +1,7 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
@@ -10,16 +12,16 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripFullResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
+import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
+import com.felipe.trip_planner_trip_service.services.ActivityService;
 import com.felipe.trip_planner_trip_service.services.InviteService;
 import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
 import com.felipe.trip_planner_trip_service.utils.response.ResponseConditionStatus;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,18 +49,20 @@ public class TripController {
   private final InviteService inviteService;
   private final ParticipantService participantService;
   private final ParticipantMapper participantMapper;
-  private final Logger logger = LoggerFactory.getLogger(TripController.class);
+  private final ActivityService activityService;
 
   public TripController(
     TripService tripService,
     InviteService inviteService,
     ParticipantService participantService,
-    ParticipantMapper participantMapper
+    ParticipantMapper participantMapper,
+    ActivityService activityService
   ) {
     this.tripService = tripService;
     this.inviteService = inviteService;
     this.participantService = participantService;
     this.participantMapper = participantMapper;
+    this.activityService = activityService;
   }
 
   @PostMapping
@@ -68,7 +72,6 @@ public class TripController {
     @RequestHeader("userEmail") String ownerEmail,
     @RequestBody @Valid TripCreateDTO tripDTO
   ) {
-    logger.info("Request Headers -> username: {} - userEmail: {}", ownerName, ownerEmail);
     Trip newTrip = this.tripService.create(ownerName, ownerEmail, tripDTO);
     TripResponseDTO tripResponseDTO = new TripResponseDTO(newTrip);
 
@@ -86,7 +89,6 @@ public class TripController {
     @RequestHeader("userEmail") String ownerEmail,
     @RequestParam(defaultValue = "0") int page
   ) {
-    logger.info("Request Headers -> userEmail: {}", ownerEmail);
     Page<Trip> trips = this.tripService.getAllTripsFromAuthUser(ownerEmail, page);
     List<TripResponseDTO> tripDTOs = trips.getContent().stream().map(TripResponseDTO::new).toList();
     TripPageResponseDTO tripPageDTO = new TripPageResponseDTO(tripDTOs, trips.getTotalElements(), trips.getTotalPages());
@@ -120,7 +122,6 @@ public class TripController {
   @DeleteMapping
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<String> deleteAllTripsFromAuthUser(@RequestHeader("userEmail") String ownerEmail) {
-    logger.info("Request Headers -> userEmail: {}", ownerEmail);
     int quantityOfDeletedTrips = this.tripService.deleteAllTripsFromAuthUser(ownerEmail);
 
     CustomResponseBody<String> response = new CustomResponseBody<>();
@@ -138,7 +139,6 @@ public class TripController {
     @PathVariable UUID tripId,
     @RequestBody @Valid TripUpdateDTO tripDTO
   ) {
-    logger.info("Request Header -> userEmail: {}", ownerEmail);
     Trip updatedTrip = this.tripService.update(tripId, ownerEmail, tripDTO);
     TripResponseDTO tripResponseDTO = new TripResponseDTO(updatedTrip);
 
@@ -156,7 +156,6 @@ public class TripController {
     @RequestHeader("userEmail") String userEmail,
     @PathVariable UUID tripId
   ) {
-    logger.info("Request Header -> userEmail: {}", userEmail);
     Trip trip = this.tripService.getById(tripId, userEmail);
     Page<Participant> participants = this.participantService.getAllTripParticipants(tripId, userEmail, 0);
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
@@ -177,7 +176,6 @@ public class TripController {
     @RequestHeader("userEmail") String ownerEmail,
     @PathVariable UUID tripId
   ) {
-    logger.info("Request Header -> userEmail: {}", ownerEmail);
     Trip deletedTrip = this.tripService.delete(tripId, ownerEmail);
     TripResponseDTO tripResponseDTO = new TripResponseDTO(deletedTrip);
 
@@ -195,7 +193,6 @@ public class TripController {
   @PatchMapping("/{tripId}/confirm")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<Void> confirmTrip(@RequestHeader("userEmail") String ownerEmail, @PathVariable UUID tripId) {
-    logger.info("Request Header -> userEmail: {}", ownerEmail);
     this.tripService.confirmOrCancelTrip(tripId, ownerEmail, true);
 
     CustomResponseBody<Void> response = new CustomResponseBody<>();
@@ -209,7 +206,6 @@ public class TripController {
   @PatchMapping("/{tripId}/cancel")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<Void> cancelTrip(@RequestHeader("userEmail") String ownerEmail, @PathVariable UUID tripId) {
-    logger.info("Request Header -> userEmail: {}", ownerEmail);
     this.tripService.confirmOrCancelTrip(tripId, ownerEmail, false);
 
     CustomResponseBody<Void> response = new CustomResponseBody<>();
@@ -227,7 +223,6 @@ public class TripController {
     @PathVariable UUID tripId,
     @RequestBody InviteParticipantDTO inviteDTO
   ) {
-    logger.info("Request Header -> userEmail: {}", ownerEmail);
     String email = this.inviteService.invite(tripId, ownerEmail, inviteDTO);
 
     CustomResponseBody<Void> response = new CustomResponseBody<>();
@@ -245,7 +240,6 @@ public class TripController {
     @PathVariable UUID tripId,
     @RequestParam(defaultValue = "0") int page
   ) {
-    logger.info("Request Header -> userEmail: {}", userEmail);
     Page<Participant> allParticipants = this.participantService.getAllTripParticipants(tripId, userEmail, page);
     ParticipantResponsePageDTO participantPageDTO = this.participantMapper.toParticipantResponsePageDTO(allParticipants);
 
@@ -275,6 +269,24 @@ public class TripController {
     response.setCode(HttpStatus.OK);
     response.setMessage("Participante removido com sucesso");
     response.setData(removedParticipantMap);
+    return response;
+  }
+
+  @PostMapping("/{tripId}/activities")
+  @ResponseStatus(HttpStatus.CREATED)
+  public CustomResponseBody<ActivityResponseDTO> createActivity(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @RequestBody @Valid ActivityCreateDTO activityDTO
+  ) {
+    Activity createdActivity = this.activityService.create(tripId, userEmail, activityDTO);
+    ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(createdActivity);
+
+    CustomResponseBody<ActivityResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.CREATED);
+    response.setMessage("Atividade criada com sucesso");
+    response.setData(activityResponseDTO);
     return response;
   }
 }
