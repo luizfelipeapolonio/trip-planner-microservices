@@ -54,6 +54,9 @@ public class Trip {
   @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Participant> participants = new ArrayList<>();
 
+  @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Activity> activities = new ArrayList<>();
+
   public Trip() {}
 
   public UUID getId() {
@@ -134,5 +137,13 @@ public class Trip {
 
   public void setParticipants(List<Participant> participants) {
     this.participants = participants;
+  }
+
+  public List<Activity> getActivities() {
+    return this.activities;
+  }
+
+  public void setActivities(List<Activity> activities) {
+    this.activities = activities;
   }
 }
