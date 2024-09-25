@@ -319,4 +319,22 @@ public class TripController {
     response.setData(activityPageDTO);
     return response;
   }
+
+  @GetMapping("/{tripId}/activities/{activityId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<ActivityResponseDTO> getActivityById(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID activityId
+  ) {
+    Activity activity = this.activityService.getById(tripId, activityId, userEmail);
+    ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(activity);
+
+    CustomResponseBody<ActivityResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Atividade de id: '" + activityId + "' encontrada");
+    response.setData(activityResponseDTO);
+    return response;
+  }
 }

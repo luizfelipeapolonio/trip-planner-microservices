@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.ActivityRepository;
@@ -38,5 +39,11 @@ public class ActivityService {
     Trip trip = this.tripService.getById(tripId, userEmail);
     Pageable pagination = PageRequest.of(pageNumber, 10);
     return this.activityRepository.findAllByTripId(trip.getId(), pagination);
+  }
+
+  public Activity getById(UUID tripId, UUID activityId, String userEmail) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+    return this.activityRepository.findByIdAndTripId(activityId, trip.getId())
+      .orElseThrow(() -> new RecordNotFoundException("Atividade de id: '" + activityId + "' não encontrada"));
   }
 }
