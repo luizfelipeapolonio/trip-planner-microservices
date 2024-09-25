@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.ActivityRepository;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Mockito.when;
@@ -27,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.any;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
 @ExtendWith(MockitoExtension.class)
 public class ActivityServiceTest {
@@ -115,5 +118,45 @@ public class ActivityServiceTest {
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findAllByTripId(this.trip.getId(), pagination);
+  }
+
+  @Test
+  @DisplayName("getById - Should successfully get an activity and return it")
+  void getByIdSuccess() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+
+    Activity foundActivity = this.activityService.getById(this.trip.getId(), activity.getId(), userEmail);
+
+    assertThat(foundActivity.getId()).isEqualTo(activity.getId());
+    assertThat(foundActivity.getDescription()).isEqualTo(activity.getDescription());
+    assertThat(foundActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
+    assertThat(foundActivity.getTrip().getId()).isEqualTo(activity.getTrip().getId());
+    assertThat(foundActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+  }
+
+  @Test
+  @DisplayName("getById - Should throw a RecordNotFoundException if the activity is not found")
+  void getByIdFailsByActivityNotFound() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.activityService.getById(this.trip.getId(), activity.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Atividade de id: '%s' não encontrada", activity.getId());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
   }
 }

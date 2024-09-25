@@ -959,4 +959,31 @@ public class TripControllerTest {
     verify(this.activityService, times(1)).getAllTripActivities(tripId, "user2@email.com", 0);
     verify(this.activityMapper, times(1)).toActivityResponsePageDTO(allActivities);
   }
+
+  @Test
+  @DisplayName("getActivityById - Should return a success response with ok status code and the activity")
+  void getActivityByIdSuccess() throws Exception {
+    Activity activity = this.activities.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    String userEmail = "user2@email.com";
+    ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(activity);
+    String url = String.format("%s/%s/activities/%s", BASE_URL, tripId, activity.getId());
+
+    when(this.activityService.getById(tripId, activity.getId(), userEmail)).thenReturn(activity);
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Atividade de id: '" + activity.getId() + "' encontrada"))
+      .andExpect(jsonPath("$.data.id").value(activityResponseDTO.id()))
+      .andExpect(jsonPath("$.data.description").value(activityResponseDTO.description()))
+      .andExpect(jsonPath("$.data.tripId").value(activityResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(activityResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
+
+    verify(this.activityService, times(1)).getById(tripId, activity.getId(), userEmail);
+  }
 }
