@@ -1,7 +1,7 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateOrUpdateDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
@@ -897,7 +897,7 @@ public class TripControllerTest {
   void createActivitySuccess() throws Exception {
     Activity activity = this.activities.get(0);
     Trip trip = this.trips.get(0);
-    ActivityCreateDTO activityDTO = new ActivityCreateDTO("Atividade 1");
+    ActivityCreateOrUpdateDTO activityDTO = new ActivityCreateOrUpdateDTO("Atividade 1");
     ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(activity);
 
     String url = String.format("%s/%s/activities", BASE_URL, trip.getId());
@@ -985,5 +985,34 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
 
     verify(this.activityService, times(1)).getById(tripId, activity.getId(), userEmail);
+  }
+
+  @Test
+  @DisplayName("updateActivity - Should return a success response with ok status code and the updated activity")
+  void updateActivitySuccess() throws Exception {
+    Activity activity = this.activities.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    var activityDTO = new ActivityCreateOrUpdateDTO("Atividade 1");
+    var activityResponseDTO = new ActivityResponseDTO(activity);
+    String jsonBody = this.objectMapper.writeValueAsString(activityDTO);
+    String url = String.format("%s/%s/activities/%s", BASE_URL, tripId, activity.getId());
+
+    when(this.activityService.update(tripId, activity.getId(), "user2@email.com", activityDTO)).thenReturn(activity);
+
+    this.mockMvc.perform(patch(url)
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Atividade atualizada com sucesso"))
+      .andExpect(jsonPath("$.data.id").value(activityResponseDTO.id()))
+      .andExpect(jsonPath("$.data.description").value(activityResponseDTO.description()))
+      .andExpect(jsonPath("$.data.tripId").value(activityResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(activityResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
+
+    verify(this.activityService, times(1)).update(tripId, activity.getId(), "user2@email.com", activityDTO);
   }
 }

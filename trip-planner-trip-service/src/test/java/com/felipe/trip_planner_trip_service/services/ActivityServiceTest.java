@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
-import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateOrUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Trip;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
@@ -83,7 +85,7 @@ public class ActivityServiceTest {
   @DisplayName("create - Should successfully create an Activity")
   void createActivitySuccess() {
     Activity activity = this.activities.get(0);
-    ActivityCreateDTO activityDTO = new ActivityCreateDTO("Atividade 1");
+    ActivityCreateOrUpdateDTO activityDTO = new ActivityCreateOrUpdateDTO("Atividade 1");
 
     when(this.tripService.getById(this.trip.getId(), "user2@email.com")).thenReturn(this.trip);
     when(this.activityRepository.save(any(Activity.class))).thenReturn(activity);
@@ -158,5 +160,95 @@ public class ActivityServiceTest {
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+  }
+
+  @Test
+  @DisplayName("update - The activity owner should be allowed to successfully update the activity")
+  void updateBeingActivityOwnerSuccess() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user2@email.com";
+    var activityDTO = new ActivityCreateOrUpdateDTO("Updated description");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+    when(this.activityRepository.save(activity)).thenReturn(activity);
+
+    Activity updatedActivity = this.activityService.update(this.trip.getId(), activity.getId(), userEmail, activityDTO);
+
+    assertThat(updatedActivity.getId()).isEqualTo(activity.getId());
+    assertThat(updatedActivity.getDescription()).isEqualTo(activityDTO.description());
+    assertThat(updatedActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
+    assertThat(updatedActivity.getTrip().getId()).isEqualTo(activity.getTrip().getId());
+    assertThat(updatedActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, times(1)).save(activity);
+  }
+
+  @Test
+  @DisplayName("update - The trip owner should be allowed to successfully update the activity")
+  void updateBeingTripOwnerSuccess() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user1@email.com";
+    var activityDTO = new ActivityCreateOrUpdateDTO("Updated description");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+    when(this.activityRepository.save(activity)).thenReturn(activity);
+
+    Activity updatedActivity = this.activityService.update(this.trip.getId(), activity.getId(), userEmail, activityDTO);
+
+    assertThat(updatedActivity.getId()).isEqualTo(activity.getId());
+    assertThat(updatedActivity.getDescription()).isEqualTo(activityDTO.description());
+    assertThat(updatedActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
+    assertThat(updatedActivity.getTrip().getId()).isEqualTo(activity.getTrip().getId());
+    assertThat(updatedActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, times(1)).save(activity);
+  }
+
+  @Test
+  @DisplayName("update - Should thrown an AccessDeniedException if the authenticated user is not the trip or the activity owner")
+  void updateFailsByUserIsNotActivityOrTripOwner() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user3@email.com";
+    var activityDTO = new ActivityCreateOrUpdateDTO("Updated description");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+
+    Exception thrown = catchException(() -> this.activityService.update(this.trip.getId(), activity.getId(), userEmail, activityDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para alterar este recurso");
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, never()).save(any(Activity.class));
+  }
+
+  @Test
+  @DisplayName("update - Should throw a RecordNotFoundException if the activity is not found")
+  void updateFailsByActivityNotFound() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user2@email.com";
+    var activityDTO = new ActivityCreateOrUpdateDTO("Updated description");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.activityService.update(this.trip.getId(), activity.getId(), userEmail, activityDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Atividade de id: '%s' não encontrada", activity.getId());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, never()).save(any(Activity.class));
   }
 }
