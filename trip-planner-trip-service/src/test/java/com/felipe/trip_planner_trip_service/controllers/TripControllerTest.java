@@ -1015,4 +1015,30 @@ public class TripControllerTest {
 
     verify(this.activityService, times(1)).update(tripId, activity.getId(), "user2@email.com", activityDTO);
   }
+
+  @Test
+  @DisplayName("deleteActivity - Should return a success response with ok status code and the deleted activity")
+  void deleteActivitySuccess() throws Exception {
+    Activity activity = this.activities.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    var activityResponseDTO = new ActivityResponseDTO(activity);
+    String url = String.format("%s/%s/activities/%s", BASE_URL, tripId, activity.getId());
+
+    when(this.activityService.delete(tripId, activity.getId(), "user2@email.com")).thenReturn(activity);
+
+    this.mockMvc.perform(delete(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Atividade excluída com sucesso"))
+      .andExpect(jsonPath("$.data.deletedActivity.id").value(activityResponseDTO.id()))
+      .andExpect(jsonPath("$.data.deletedActivity.description").value(activityResponseDTO.description()))
+      .andExpect(jsonPath("$.data.deletedActivity.tripId").value(activityResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.deletedActivity.ownerEmail").value(activityResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.deletedActivity.createdAt").value(activityResponseDTO.createdAt()));
+
+    verify(this.activityService, times(1)).delete(tripId, activity.getId(), "user2@email.com");
+  }
 }

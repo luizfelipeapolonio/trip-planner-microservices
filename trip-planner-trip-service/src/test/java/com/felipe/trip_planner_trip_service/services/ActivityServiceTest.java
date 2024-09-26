@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -211,7 +213,7 @@ public class ActivityServiceTest {
   }
 
   @Test
-  @DisplayName("update - Should thrown an AccessDeniedException if the authenticated user is not the trip or the activity owner")
+  @DisplayName("update - Should throw an AccessDeniedException if the authenticated user is not the trip or the activity owner")
   void updateFailsByUserIsNotActivityOrTripOwner() {
     Activity activity = this.activities.get(0);
     String userEmail = "user3@email.com";
@@ -250,5 +252,93 @@ public class ActivityServiceTest {
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
     verify(this.activityRepository, never()).save(any(Activity.class));
+  }
+
+  @Test
+  @DisplayName("delete - The activity owner should be allowed to successfully delete the activity")
+  void deleteBeingActivityOwnerSuccess() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user2@email.com";
+    ArgumentCaptor<Activity> activityCapture = ArgumentCaptor.forClass(Activity.class);
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+    doNothing().when(this.activityRepository).delete(activityCapture.capture());
+
+    Activity deletedActivity = this.activityService.delete(this.trip.getId(), activity.getId(), userEmail);
+
+    assertThat(deletedActivity.getId()).isEqualTo(activityCapture.getValue().getId());
+    assertThat(deletedActivity.getDescription()).isEqualTo(activityCapture.getValue().getDescription());
+    assertThat(deletedActivity.getOwnerEmail()).isEqualTo(activityCapture.getValue().getOwnerEmail());
+    assertThat(deletedActivity.getTrip().getId()).isEqualTo(activityCapture.getValue().getTrip().getId());
+    assertThat(deletedActivity.getCreatedAt()).isEqualTo(activityCapture.getValue().getCreatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, times(1)).delete(activity);
+  }
+
+  @Test
+  @DisplayName("delete - The trip owner should be allowed to successfully delete the activity")
+  void deleteBeingTripOwnerSuccess() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user1@email.com";
+    ArgumentCaptor<Activity> activityCapture = ArgumentCaptor.forClass(Activity.class);
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+    doNothing().when(this.activityRepository).delete(activityCapture.capture());
+
+    Activity deletedActivity = this.activityService.delete(this.trip.getId(), activity.getId(), userEmail);
+
+    assertThat(deletedActivity.getId()).isEqualTo(activityCapture.getValue().getId());
+    assertThat(deletedActivity.getDescription()).isEqualTo(activityCapture.getValue().getDescription());
+    assertThat(deletedActivity.getOwnerEmail()).isEqualTo(activityCapture.getValue().getOwnerEmail());
+    assertThat(deletedActivity.getTrip().getId()).isEqualTo(activityCapture.getValue().getTrip().getId());
+    assertThat(deletedActivity.getCreatedAt()).isEqualTo(activityCapture.getValue().getCreatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, times(1)).delete(activity);
+  }
+
+  @Test
+  @DisplayName("delete - Should throw an AccessDeniedException if the authenticated user is not the trip or the activity owner")
+  void deleteFailsByUserIsNotActivityOrTripOwner() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user3@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.of(activity));
+
+    Exception thrown = catchException(() -> this.activityService.delete(this.trip.getId(), activity.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para excluir este recurso");
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, never()).delete(any(Activity.class));
+  }
+
+  @Test
+  @DisplayName("delete - Should throw a RecordNotFoundException if the activity is not found")
+  void deleteFailsByActivityNotFound() {
+    Activity activity = this.activities.get(0);
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findByIdAndTripId(activity.getId(), this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.activityService.delete(this.trip.getId(), activity.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Atividade de id: '%s' não encontrada", activity.getId());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
+    verify(this.activityRepository, never()).delete(any(Activity.class));
   }
 }
