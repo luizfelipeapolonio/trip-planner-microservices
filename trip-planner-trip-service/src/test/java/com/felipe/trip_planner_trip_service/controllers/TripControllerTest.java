@@ -170,6 +170,7 @@ public class TripControllerTest {
     activity1.setOwnerEmail("user2@email.com");
     activity1.setTrip(trip);
     activity1.setCreatedAt(mockDateTime);
+    activity1.setUpdatedAt(mockDateTime);
 
     Activity activity2 = new Activity();
     activity2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
@@ -177,6 +178,7 @@ public class TripControllerTest {
     activity2.setOwnerEmail("user2@email.com");
     activity2.setTrip(trip);
     activity2.setCreatedAt(mockDateTime);
+    activity2.setUpdatedAt(mockDateTime);
 
     Link link1 = new Link();
     link1.setId(UUID.fromString("d2290ead-2b72-4af6-bf58-7d776ad5754e"));
@@ -945,7 +947,8 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.description").value(activityResponseDTO.description()))
       .andExpect(jsonPath("$.data.tripId").value(activityResponseDTO.tripId()))
       .andExpect(jsonPath("$.data.ownerEmail").value(activityResponseDTO.ownerEmail()))
-      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
+      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(activityResponseDTO.updatedAt()));
 
     verify(this.activityService, times(1)).create(trip.getId(), "user2@email.com", activityDTO);
   }
@@ -1009,7 +1012,8 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.description").value(activityResponseDTO.description()))
       .andExpect(jsonPath("$.data.tripId").value(activityResponseDTO.tripId()))
       .andExpect(jsonPath("$.data.ownerEmail").value(activityResponseDTO.ownerEmail()))
-      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
+      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(activityResponseDTO.updatedAt()));
 
     verify(this.activityService, times(1)).getById(tripId, activity.getId(), userEmail);
   }
@@ -1038,7 +1042,8 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.description").value(activityResponseDTO.description()))
       .andExpect(jsonPath("$.data.tripId").value(activityResponseDTO.tripId()))
       .andExpect(jsonPath("$.data.ownerEmail").value(activityResponseDTO.ownerEmail()))
-      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()));
+      .andExpect(jsonPath("$.data.createdAt").value(activityResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(activityResponseDTO.updatedAt()));
 
     verify(this.activityService, times(1)).update(tripId, activity.getId(), "user2@email.com", activityDTO);
   }
@@ -1064,7 +1069,8 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.deletedActivity.description").value(activityResponseDTO.description()))
       .andExpect(jsonPath("$.data.deletedActivity.tripId").value(activityResponseDTO.tripId()))
       .andExpect(jsonPath("$.data.deletedActivity.ownerEmail").value(activityResponseDTO.ownerEmail()))
-      .andExpect(jsonPath("$.data.deletedActivity.createdAt").value(activityResponseDTO.createdAt()));
+      .andExpect(jsonPath("$.data.deletedActivity.createdAt").value(activityResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.deletedActivity.updatedAt").value(activityResponseDTO.updatedAt()));
 
     verify(this.activityService, times(1)).delete(tripId, activity.getId(), "user2@email.com");
   }

@@ -71,6 +71,7 @@ public class ActivityServiceTest {
     activity1.setOwnerEmail("user2@email.com");
     activity1.setTrip(trip);
     activity1.setCreatedAt(mockDateTime);
+    activity1.setUpdatedAt(mockDateTime);
 
     Activity activity2 = new Activity();
     activity2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
@@ -78,6 +79,7 @@ public class ActivityServiceTest {
     activity2.setOwnerEmail("user2@email.com");
     activity2.setTrip(trip);
     activity2.setCreatedAt(mockDateTime);
+    activity2.setUpdatedAt(mockDateTime);
 
     this.activities = List.of(activity1, activity2);
     this.trip = trip;
@@ -99,6 +101,7 @@ public class ActivityServiceTest {
     assertThat(createdActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
     assertThat(createdActivity.getTrip().getId()).isEqualTo(this.trip.getId());
     assertThat(createdActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+    assertThat(createdActivity.getUpdatedAt()).isEqualTo(activity.getUpdatedAt());
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), "user2@email.com");
     verify(this.activityRepository, times(1)).save(any(Activity.class));
@@ -140,6 +143,7 @@ public class ActivityServiceTest {
     assertThat(foundActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
     assertThat(foundActivity.getTrip().getId()).isEqualTo(activity.getTrip().getId());
     assertThat(foundActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+    assertThat(foundActivity.getUpdatedAt()).isEqualTo(activity.getUpdatedAt());
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
@@ -182,6 +186,7 @@ public class ActivityServiceTest {
     assertThat(updatedActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
     assertThat(updatedActivity.getTrip().getId()).isEqualTo(activity.getTrip().getId());
     assertThat(updatedActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+    assertThat(updatedActivity.getUpdatedAt()).isEqualTo(activity.getUpdatedAt());
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
@@ -206,6 +211,7 @@ public class ActivityServiceTest {
     assertThat(updatedActivity.getOwnerEmail()).isEqualTo(activity.getOwnerEmail());
     assertThat(updatedActivity.getTrip().getId()).isEqualTo(activity.getTrip().getId());
     assertThat(updatedActivity.getCreatedAt()).isEqualTo(activity.getCreatedAt());
+    assertThat(updatedActivity.getUpdatedAt()).isEqualTo(activity.getUpdatedAt());
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
@@ -272,6 +278,7 @@ public class ActivityServiceTest {
     assertThat(deletedActivity.getOwnerEmail()).isEqualTo(activityCapture.getValue().getOwnerEmail());
     assertThat(deletedActivity.getTrip().getId()).isEqualTo(activityCapture.getValue().getTrip().getId());
     assertThat(deletedActivity.getCreatedAt()).isEqualTo(activityCapture.getValue().getCreatedAt());
+    assertThat(deletedActivity.getUpdatedAt()).isEqualTo(activityCapture.getValue().getUpdatedAt());
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
@@ -296,6 +303,7 @@ public class ActivityServiceTest {
     assertThat(deletedActivity.getOwnerEmail()).isEqualTo(activityCapture.getValue().getOwnerEmail());
     assertThat(deletedActivity.getTrip().getId()).isEqualTo(activityCapture.getValue().getTrip().getId());
     assertThat(deletedActivity.getCreatedAt()).isEqualTo(activityCapture.getValue().getCreatedAt());
+    assertThat(deletedActivity.getUpdatedAt()).isEqualTo(activityCapture.getValue().getUpdatedAt());
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());

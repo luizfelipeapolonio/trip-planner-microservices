@@ -50,6 +50,7 @@ public class ActivityMapperTest {
     activity1.setOwnerEmail("user2@email.com");
     activity1.setTrip(trip);
     activity1.setCreatedAt(mockDateTime);
+    activity1.setUpdatedAt(mockDateTime);
 
     Activity activity2 = new Activity();
     activity2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
@@ -57,6 +58,7 @@ public class ActivityMapperTest {
     activity2.setOwnerEmail("user2@email.com");
     activity2.setTrip(trip);
     activity2.setCreatedAt(mockDateTime);
+    activity2.setUpdatedAt(mockDateTime);
 
     this.activities = List.of(activity1, activity2);
   }
