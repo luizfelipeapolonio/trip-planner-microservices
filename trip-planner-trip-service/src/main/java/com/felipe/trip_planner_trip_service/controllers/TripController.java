@@ -1,6 +1,6 @@
 package com.felipe.trip_planner_trip_service.controllers;
 
-import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateOrUpdateDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
@@ -289,7 +289,7 @@ public class TripController {
   public CustomResponseBody<ActivityResponseDTO> createActivity(
     @RequestHeader("userEmail") String userEmail,
     @PathVariable UUID tripId,
-    @RequestBody @Valid ActivityCreateDTO activityDTO
+    @RequestBody @Valid ActivityCreateOrUpdateDTO activityDTO
   ) {
     Activity createdActivity = this.activityService.create(tripId, userEmail, activityDTO);
     ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(createdActivity);
@@ -334,6 +334,25 @@ public class TripController {
     response.setStatus(ResponseConditionStatus.SUCCESS);
     response.setCode(HttpStatus.OK);
     response.setMessage("Atividade de id: '" + activityId + "' encontrada");
+    response.setData(activityResponseDTO);
+    return response;
+  }
+
+  @PatchMapping("/{tripId}/activities/{activityId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<ActivityResponseDTO> updateActivity(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID activityId,
+    @RequestBody @Valid ActivityCreateOrUpdateDTO activityDTO
+  ) {
+    Activity updatedActivity = this.activityService.update(tripId, activityId, userEmail, activityDTO);
+    ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(updatedActivity);
+
+    CustomResponseBody<ActivityResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Atividade atualizada com sucesso");
     response.setData(activityResponseDTO);
     return response;
   }

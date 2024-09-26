@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
-import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.activity.ActivityCreateOrUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Trip;
@@ -23,7 +24,7 @@ public class ActivityService {
     this.tripService = tripService;
   }
 
-  public Activity create(UUID tripId, String userEmail, ActivityCreateDTO activityDTO) {
+  public Activity create(UUID tripId, String userEmail, ActivityCreateOrUpdateDTO activityDTO) {
     // Checks if the authenticated user is the trip owner or a trip participant
     Trip trip = this.tripService.getById(tripId, userEmail);
 
@@ -44,6 +45,22 @@ public class ActivityService {
   public Activity getById(UUID tripId, UUID activityId, String userEmail) {
     Trip trip = this.tripService.getById(tripId, userEmail);
     return this.activityRepository.findByIdAndTripId(activityId, trip.getId())
+      .orElseThrow(() -> new RecordNotFoundException("Atividade de id: '" + activityId + "' não encontrada"));
+  }
+
+  public Activity update(UUID tripId, UUID activityId, String userEmail, ActivityCreateOrUpdateDTO activityDTO) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+    return this.activityRepository.findByIdAndTripId(activityId, trip.getId())
+      .map(foundActivity -> {
+        String tripOwnerEmail = trip.getOwnerEmail();
+        String activityOwnerEmail = foundActivity.getOwnerEmail();
+
+        if(!tripOwnerEmail.equals(userEmail) && !activityOwnerEmail.equals(userEmail)) {
+          throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
+        }
+        foundActivity.setDescription(activityDTO.description());
+        return this.activityRepository.save(foundActivity);
+      })
       .orElseThrow(() -> new RecordNotFoundException("Atividade de id: '" + activityId + "' não encontrada"));
   }
 }
