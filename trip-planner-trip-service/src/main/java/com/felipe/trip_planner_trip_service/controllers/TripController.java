@@ -356,4 +356,25 @@ public class TripController {
     response.setData(activityResponseDTO);
     return response;
   }
+
+  @DeleteMapping("/{tripId}/activities/{activityId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Map<String, ActivityResponseDTO>> deleteActivity(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID activityId
+  ) {
+    Activity deletedActivity = this.activityService.delete(tripId, activityId, userEmail);
+    ActivityResponseDTO activityResponseDTO = new ActivityResponseDTO(deletedActivity);
+
+    Map<String, ActivityResponseDTO> activityResponseMap = new HashMap<>(1);
+    activityResponseMap.put("deletedActivity", activityResponseDTO);
+
+    CustomResponseBody<Map<String, ActivityResponseDTO>> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Atividade excluída com sucesso");
+    response.setData(activityResponseMap);
+    return response;
+  }
 }

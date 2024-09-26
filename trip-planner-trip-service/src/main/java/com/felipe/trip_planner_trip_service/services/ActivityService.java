@@ -63,4 +63,20 @@ public class ActivityService {
       })
       .orElseThrow(() -> new RecordNotFoundException("Atividade de id: '" + activityId + "' não encontrada"));
   }
+
+  public Activity delete(UUID tripId, UUID activityId, String userEmail) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+    Activity activity = this.activityRepository.findByIdAndTripId(activityId, trip.getId())
+      .orElseThrow(() -> new RecordNotFoundException("Atividade de id: '" + activityId + "' não encontrada"));
+
+    String tripOwnerEmail = trip.getOwnerEmail();
+    String activityOwnerEmail = activity.getOwnerEmail();
+
+    if(!tripOwnerEmail.equals(userEmail) && !activityOwnerEmail.equals(userEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para excluir este recurso");
+    }
+
+    this.activityRepository.delete(activity);
+    return activity;
+  }
 }
