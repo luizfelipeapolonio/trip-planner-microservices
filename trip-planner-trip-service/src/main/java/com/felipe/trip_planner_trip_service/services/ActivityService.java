@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -78,5 +79,17 @@ public class ActivityService {
 
     this.activityRepository.delete(activity);
     return activity;
+  }
+
+  public int deleteAllTripActivities(UUID tripId, String userEmail) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+
+    if(!trip.getOwnerEmail().equals(userEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para remover estes recursos");
+    }
+
+    List<Activity> activities = this.activityRepository.findAllByTripId(tripId);
+    this.activityRepository.deleteAll(activities);
+    return activities.size();
   }
 }

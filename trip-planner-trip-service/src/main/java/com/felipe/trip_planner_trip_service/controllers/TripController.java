@@ -320,6 +320,22 @@ public class TripController {
     return response;
   }
 
+  @DeleteMapping("/{tripId}/activities")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<String> deleteAllTripActivities(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId
+  ) {
+    int quantityOfDeletedActivities = this.activityService.deleteAllTripActivities(tripId, userEmail);
+
+    CustomResponseBody<String> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todas as atividades da viagem de id: '" + tripId + "' foram excluídas com sucesso");
+    response.setData("Quantidade de atividades excluídas: " + quantityOfDeletedActivities);
+    return response;
+  }
+
   @GetMapping("/{tripId}/activities/{activityId}")
   @ResponseStatus(HttpStatus.OK)
   public CustomResponseBody<ActivityResponseDTO> getActivityById(
