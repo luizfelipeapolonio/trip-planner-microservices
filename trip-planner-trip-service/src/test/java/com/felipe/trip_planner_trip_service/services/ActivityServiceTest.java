@@ -341,4 +341,39 @@ public class ActivityServiceTest {
     verify(this.activityRepository, times(1)).findByIdAndTripId(activity.getId(), this.trip.getId());
     verify(this.activityRepository, never()).delete(any(Activity.class));
   }
+
+  @Test
+  @DisplayName("delete - The trip owner should be allowed to successfully delete all trip activities")
+  void deleteAllTripActivitiesSuccess() {
+    String userEmail = "user1@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.activityRepository.findAllByTripId(this.trip.getId())).thenReturn(this.activities);
+
+    int quantityOfDeletedActivities = this.activityService.deleteAllTripActivities(this.trip.getId(), userEmail);
+
+    assertThat(quantityOfDeletedActivities).isEqualTo(this.activities.size());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, times(1)).findAllByTripId(this.trip.getId());
+    verify(this.activityRepository, times(1)).deleteAll(this.activities);
+  }
+
+  @Test
+  @DisplayName("deleteAllTripActivities - Should throw an AccessDeniedException if the authenticated user is not the trip owner")
+  void deleteAllTripActivitiesFailsByUserIsNotTripOwner() {
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+
+    Exception thrown = catchException(() -> this.activityService.deleteAllTripActivities(this.trip.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para remover estes recursos");
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.activityRepository, never()).findAllByTripId(this.trip.getId());
+    verify(this.activityRepository, never()).deleteAll(any());
+  }
 }

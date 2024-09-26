@@ -1041,4 +1041,24 @@ public class TripControllerTest {
 
     verify(this.activityService, times(1)).delete(tripId, activity.getId(), "user2@email.com");
   }
+
+  @Test
+  @DisplayName("deleteAllTripActivities - Should return a success response with ok status code and quantity of deleted activities")
+  void deleteAllTripActivitiesSuccess() throws Exception {
+    UUID tripId = this.trips.get(0).getId();
+    String url = String.format("%s/%s/activities", BASE_URL, tripId);
+
+    when(this.activityService.deleteAllTripActivities(tripId, "user1@email.com")).thenReturn(this.activities.size());
+
+    this.mockMvc.perform(delete(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user1@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Todas as atividades da viagem de id: '" + tripId + "' foram excluídas com sucesso"))
+      .andExpect(jsonPath("$.data").value("Quantidade de atividades excluídas: " + this.activities.size()));
+
+    verify(this.activityService, times(1)).deleteAllTripActivities(tripId, "user1@email.com");
+  }
 }
