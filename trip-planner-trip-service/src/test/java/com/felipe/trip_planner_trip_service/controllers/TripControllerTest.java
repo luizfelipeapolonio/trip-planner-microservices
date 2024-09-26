@@ -6,6 +6,8 @@ import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
@@ -20,10 +22,12 @@ import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.InvalidDateException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Activity;
+import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.ActivityService;
 import com.felipe.trip_planner_trip_service.services.InviteService;
+import com.felipe.trip_planner_trip_service.services.LinkService;
 import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
@@ -95,6 +99,9 @@ public class TripControllerTest {
   @MockBean
   ActivityService activityService;
 
+  @MockBean
+  LinkService linkService;
+
   @SpyBean
   ParticipantMapper participantMapper;
 
@@ -104,6 +111,7 @@ public class TripControllerTest {
   private List<Trip> trips;
   private List<Participant> participants;
   private List<Activity> activities;
+  private List<Link> links;
   private final String BASE_URL = "/api/trips";
 
   @BeforeEach
@@ -170,9 +178,28 @@ public class TripControllerTest {
     activity2.setTrip(trip);
     activity2.setCreatedAt(mockDateTime);
 
+    Link link1 = new Link();
+    link1.setId(UUID.fromString("d2290ead-2b72-4af6-bf58-7d776ad5754e"));
+    link1.setTitle("Link 1");
+    link1.setLink("https://somelink.com");
+    link1.setOwnerEmail("user2@email.com");
+    link1.setCreatedAt(mockDateTime);
+    link1.setUpdatedAt(mockDateTime);
+    link1.setTrip(trip);
+
+    Link link2 = new Link();
+    link2.setId(UUID.fromString("3d9aae79-12a9-4cfd-992f-ecf133d71eae"));
+    link2.setTitle("Link 2");
+    link2.setLink("https://somelink2.com");
+    link2.setOwnerEmail("user2@email.com");
+    link2.setCreatedAt(mockDateTime);
+    link2.setUpdatedAt(mockDateTime);
+    link2.setTrip(trip);
+
     this.trips = List.of(trip, trip2, trip3);
     this.participants = List.of(participant, participant2);
     this.activities = List.of(activity1, activity2);
+    this.links = List.of(link1, link2);
   }
 
   @Test
@@ -1060,5 +1087,37 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data").value("Quantidade de atividades excluídas: " + this.activities.size()));
 
     verify(this.activityService, times(1)).deleteAllTripActivities(tripId, "user1@email.com");
+  }
+
+  @Test
+  @DisplayName("createLink - Should return a success response with created status code and the created link")
+  void createLinkSuccess() throws Exception {
+    Link link = this.links.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    var linkDTO = new LinkCreateDTO("Link 1", "https://somelink.com");
+    var linkResponseDTO = new LinkResponseDTO(link);
+
+    String url = String.format("%s/%s/links", BASE_URL, tripId);
+    String jsonBody = this.objectMapper.writeValueAsString(linkDTO);
+
+    when(this.linkService.create(tripId, "user2@email.com", linkDTO)).thenReturn(link);
+
+    this.mockMvc.perform(post(url)
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.CREATED.value()))
+      .andExpect(jsonPath("$.message").value("Link criado com sucesso"))
+      .andExpect(jsonPath("$.data.id").value(linkResponseDTO.id()))
+      .andExpect(jsonPath("$.data.title").value(linkResponseDTO.title()))
+      .andExpect(jsonPath("$.data.link").value(linkResponseDTO.link()))
+      .andExpect(jsonPath("$.data.tripId").value(linkResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(linkResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.createdAt").value(linkResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(linkResponseDTO.updatedAt()));
+
+    verify(this.linkService, times(1)).create(tripId, "user2@email.com", linkDTO);
   }
 }
