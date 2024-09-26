@@ -5,6 +5,8 @@ import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.ActivityResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
@@ -15,10 +17,12 @@ import com.felipe.trip_planner_trip_service.dtos.trip.TripPageResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.trip.TripUpdateDTO;
 import com.felipe.trip_planner_trip_service.models.Activity;
+import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Participant;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.services.ActivityService;
 import com.felipe.trip_planner_trip_service.services.InviteService;
+import com.felipe.trip_planner_trip_service.services.LinkService;
 import com.felipe.trip_planner_trip_service.services.ParticipantService;
 import com.felipe.trip_planner_trip_service.services.TripService;
 import com.felipe.trip_planner_trip_service.utils.response.CustomResponseBody;
@@ -53,6 +57,7 @@ public class TripController {
   private final ParticipantMapper participantMapper;
   private final ActivityService activityService;
   private final ActivityMapper activityMapper;
+  private final LinkService linkService;
 
   public TripController(
     TripService tripService,
@@ -60,7 +65,8 @@ public class TripController {
     ParticipantService participantService,
     ParticipantMapper participantMapper,
     ActivityService activityService,
-    ActivityMapper activityMapper
+    ActivityMapper activityMapper,
+    LinkService linkService
   ) {
     this.tripService = tripService;
     this.inviteService = inviteService;
@@ -68,6 +74,7 @@ public class TripController {
     this.participantMapper = participantMapper;
     this.activityService = activityService;
     this.activityMapper = activityMapper;
+    this.linkService = linkService;
   }
 
   @PostMapping
@@ -391,6 +398,24 @@ public class TripController {
     response.setCode(HttpStatus.OK);
     response.setMessage("Atividade excluída com sucesso");
     response.setData(activityResponseMap);
+    return response;
+  }
+
+  @PostMapping("/{tripId}/links")
+  @ResponseStatus(HttpStatus.CREATED)
+  public CustomResponseBody<LinkResponseDTO> createLink(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @RequestBody @Valid LinkCreateDTO linkDTO
+    ) {
+    Link createdLink = this.linkService.create(tripId, userEmail, linkDTO);
+    LinkResponseDTO linkResponseDTO = new LinkResponseDTO(createdLink);
+
+    CustomResponseBody<LinkResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.CREATED);
+    response.setMessage("Link criado com sucesso");
+    response.setData(linkResponseDTO);
     return response;
   }
 }
