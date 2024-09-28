@@ -7,6 +7,8 @@ import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.mapper.LinkMapper;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
@@ -58,6 +60,7 @@ public class TripController {
   private final ActivityService activityService;
   private final ActivityMapper activityMapper;
   private final LinkService linkService;
+  private final LinkMapper linkMapper;
 
   public TripController(
     TripService tripService,
@@ -66,7 +69,8 @@ public class TripController {
     ParticipantMapper participantMapper,
     ActivityService activityService,
     ActivityMapper activityMapper,
-    LinkService linkService
+    LinkService linkService,
+    LinkMapper linkMapper
   ) {
     this.tripService = tripService;
     this.inviteService = inviteService;
@@ -75,6 +79,7 @@ public class TripController {
     this.activityService = activityService;
     this.activityMapper = activityMapper;
     this.linkService = linkService;
+    this.linkMapper = linkMapper;
   }
 
   @PostMapping
@@ -171,14 +176,16 @@ public class TripController {
     Trip trip = this.tripService.getById(tripId, userEmail);
     Page<Participant> participants = this.participantService.getAllTripParticipants(tripId, userEmail, 0);
     Page<Activity> activities = this.activityService.getAllTripActivities(tripId, userEmail, 0);
+    Page<Link> links = this.linkService.getAllTripLinks(tripId, userEmail, 0);
 
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
     ParticipantResponsePageDTO participantsPageDTO = this.participantMapper.toParticipantResponsePageDTO(participants);
     ActivityResponsePageDTO activitiesPageDTO = this.activityMapper.toActivityResponsePageDTO(activities);
+    LinkResponsePageDTO linksPageDTO = this.linkMapper.toLinkResponsePageDTO(links);
 
     TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(
       tripResponseDTO,
-      new TripExtraInfoResponseDTO(participantsPageDTO, activitiesPageDTO)
+      new TripExtraInfoResponseDTO(participantsPageDTO, activitiesPageDTO, linksPageDTO)
     );
 
     CustomResponseBody<TripFullResponseDTO> response = new CustomResponseBody<>();
@@ -416,6 +423,24 @@ public class TripController {
     response.setCode(HttpStatus.CREATED);
     response.setMessage("Link criado com sucesso");
     response.setData(linkResponseDTO);
+    return response;
+  }
+
+  @GetMapping("/{tripId}/links")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<LinkResponsePageDTO> getAllTripLinks(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @RequestParam(defaultValue = "0") int page
+  ) {
+    Page<Link> allLinks = this.linkService.getAllTripLinks(tripId, userEmail, page);
+    LinkResponsePageDTO linkResponsePageDTO = this.linkMapper.toLinkResponsePageDTO(allLinks);
+
+    CustomResponseBody<LinkResponsePageDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todos os links da viagem de id: '" + tripId + "'");
+    response.setData(linkResponsePageDTO);
     return response;
   }
 }
