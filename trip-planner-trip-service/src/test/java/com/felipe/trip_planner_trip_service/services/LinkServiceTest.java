@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -98,5 +102,26 @@ public class LinkServiceTest {
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.linkRepository, times(1)).save(any(Link.class));
+  }
+
+  @Test
+  @DisplayName("getAllTripLinks - Should successfully get all links from a trip and return a page of links")
+  void getAllTripLinksSuccess() {
+    Page<Link> links = new PageImpl<>(this.links);
+    Pageable pagination = PageRequest.of(0, 10);
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findAllByTripId(this.trip.getId(), pagination)).thenReturn(links);
+
+    Page<Link> allLinks = this.linkService.getAllTripLinks(this.trip.getId(), userEmail, 0);
+
+    assertThat(allLinks.getTotalElements()).isEqualTo(links.getTotalElements());
+    assertThat(allLinks.getTotalPages()).isEqualTo(links.getTotalPages());
+    assertThat(allLinks.getContent())
+      .allSatisfy(link -> assertThat(link.getTrip().getId()).isEqualTo(this.trip.getId()));
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findAllByTripId(this.trip.getId(), pagination);
   }
 }

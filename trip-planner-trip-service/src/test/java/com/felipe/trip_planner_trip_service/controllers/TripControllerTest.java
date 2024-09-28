@@ -8,6 +8,8 @@ import com.felipe.trip_planner_trip_service.dtos.activity.mapper.ActivityMapper;
 import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkResponseDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.mapper.LinkMapper;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.mapper.ParticipantMapper;
@@ -107,6 +109,9 @@ public class TripControllerTest {
 
   @SpyBean
   ActivityMapper activityMapper;
+
+  @SpyBean
+  LinkMapper linkMapper;
 
   private List<Trip> trips;
   private List<Participant> participants;
@@ -406,12 +411,14 @@ public class TripControllerTest {
     TripResponseDTO tripResponseDTO = new TripResponseDTO(trip);
     Page<Participant> participants = new PageImpl<>(this.participants);
     Page<Activity> activities = new PageImpl<>(this.activities);
+    Page<Link> links = new PageImpl<>(this.links);
 
     var participantPageDTO = this.participantMapper.toParticipantResponsePageDTO(participants);
     var activitiesPageDTO = this.activityMapper.toActivityResponsePageDTO(activities);
+    var linksPageDTO = this.linkMapper.toLinkResponsePageDTO(links);
     TripFullResponseDTO tripFullResponseDTO = new TripFullResponseDTO(
       tripResponseDTO,
-      new TripExtraInfoResponseDTO(participantPageDTO, activitiesPageDTO)
+      new TripExtraInfoResponseDTO(participantPageDTO, activitiesPageDTO, linksPageDTO)
     );
 
     CustomResponseBody<TripFullResponseDTO> response = new CustomResponseBody<>();
@@ -425,6 +432,7 @@ public class TripControllerTest {
     when(this.tripService.getById(trip.getId(), userEmail)).thenReturn(trip);
     when(this.participantService.getAllTripParticipants(trip.getId(), userEmail, 0)).thenReturn(participants);
     when(this.activityService.getAllTripActivities(trip.getId(), userEmail, 0)).thenReturn(activities);
+    when(this.linkService.getAllTripLinks(trip.getId(), userEmail, 0)).thenReturn(links);
 
     this.mockMvc.perform(get(BASE_URL + "/" + trip.getId())
       .accept(MediaType.APPLICATION_JSON)
@@ -435,6 +443,10 @@ public class TripControllerTest {
     verify(this.tripService, times(1)).getById(trip.getId(), userEmail);
     verify(this.participantService, times(1)).getAllTripParticipants(trip.getId(), userEmail, 0);
     verify(this.participantMapper, times(2)).toParticipantResponsePageDTO(participants);
+    verify(this.activityService, times(1)).getAllTripActivities(trip.getId(), userEmail, 0);
+    verify(this.activityMapper, times(2)).toActivityResponsePageDTO(activities);
+    verify(this.linkService, times(1)).getAllTripLinks(trip.getId(), userEmail, 0);
+    verify(this.linkMapper, times(2)).toLinkResponsePageDTO(links);
   }
 
   @Test
@@ -1125,5 +1137,35 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.updatedAt").value(linkResponseDTO.updatedAt()));
 
     verify(this.linkService, times(1)).create(tripId, "user2@email.com", linkDTO);
+  }
+
+  @Test
+  @DisplayName("getAllTripLinks - Should return a success response with ok status code and a LinkResponsePageDTO")
+  void getAllTripLinksSuccess() throws Exception {
+    UUID tripId = this.trips.get(0).getId();
+    Page<Link> links = new PageImpl<>(this.links);
+    List<LinkResponseDTO> linkResponseDTOs = links.getContent().stream().map(LinkResponseDTO::new).toList();
+    var linkResponsePageDTO = new LinkResponsePageDTO(linkResponseDTOs, links.getTotalElements(), links.getTotalPages());
+
+    CustomResponseBody<LinkResponsePageDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Todos os links da viagem de id: '" + tripId + "'");
+    response.setData(linkResponsePageDTO);
+
+    String url = String.format("%s/%s/links?page=%d", BASE_URL, tripId, 0);
+    String jsonResponseBody = this.objectMapper.writeValueAsString(response);
+
+    when(this.linkService.getAllTripLinks(tripId, "user2@email.com", 0)).thenReturn(links);
+    when(this.linkMapper.toLinkResponsePageDTO(links)).thenReturn(linkResponsePageDTO);
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(content().json(jsonResponseBody));
+
+    verify(this.linkService, times(1)).getAllTripLinks(tripId, "user2@email.com", 0);
+    verify(this.linkMapper, times(1)).toLinkResponsePageDTO(links);
   }
 }
