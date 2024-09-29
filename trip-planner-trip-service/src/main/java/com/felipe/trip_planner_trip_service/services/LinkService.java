@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.LinkRepository;
@@ -38,5 +39,11 @@ public class LinkService {
     Trip trip = this.tripService.getById(tripId, userEmail);
     Pageable pagination = PageRequest.of(pageNumber, 10);
     return this.linkRepository.findAllByTripId(trip.getId(), pagination);
+  }
+
+  public Link getById(UUID tripId, UUID linkId,  String userEmail) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+    return this.linkRepository.findByIdAndTripId(linkId, trip.getId())
+      .orElseThrow(() -> new RecordNotFoundException("Link de id: '" + linkId + "' não encontrado"));
   }
 }

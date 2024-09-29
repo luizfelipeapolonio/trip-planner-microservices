@@ -443,4 +443,22 @@ public class TripController {
     response.setData(linkResponsePageDTO);
     return response;
   }
+
+  @GetMapping("/{tripId}/links/{linkId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<LinkResponseDTO> getLinkById(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID linkId
+  ) {
+    Link link = this.linkService.getById(tripId, linkId, userEmail);
+    LinkResponseDTO linkResponseDTO = new LinkResponseDTO(link);
+
+    CustomResponseBody<LinkResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Link de id: '" + linkId + "' encontrado");
+    response.setData(linkResponseDTO);
+    return response;
+  }
 }
