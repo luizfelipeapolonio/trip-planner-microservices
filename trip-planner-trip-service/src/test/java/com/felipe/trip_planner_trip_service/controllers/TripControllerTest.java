@@ -1168,4 +1168,33 @@ public class TripControllerTest {
     verify(this.linkService, times(1)).getAllTripLinks(tripId, "user2@email.com", 0);
     verify(this.linkMapper, times(1)).toLinkResponsePageDTO(links);
   }
+
+  @Test
+  @DisplayName("getLinkById - Should return a success response with ok status code and the found link")
+  void getLinkByIdSuccess() throws Exception {
+    Link link = this.links.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    String userEmail = "user2@email.com";
+    var linkResponseDTO = new LinkResponseDTO(link);
+    String url = String.format("%s/%s/links/%s", BASE_URL, tripId, link.getId());
+
+    when(this.linkService.getById(tripId, link.getId(), userEmail)).thenReturn(link);
+
+    this.mockMvc.perform(get(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Link de id: '" + link.getId() + "' encontrado"))
+      .andExpect(jsonPath("$.data.id").value(linkResponseDTO.id()))
+      .andExpect(jsonPath("$.data.title").value(linkResponseDTO.title()))
+      .andExpect(jsonPath("$.data.link").value(linkResponseDTO.link()))
+      .andExpect(jsonPath("$.data.tripId").value(linkResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(linkResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.createdAt").value(linkResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(linkResponseDTO.updatedAt()));
+
+    verify(this.linkService, times(1)).getById(tripId, link.getId(), userEmail);
+  }
 }

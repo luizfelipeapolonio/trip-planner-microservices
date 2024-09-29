@@ -1,6 +1,7 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.LinkRepository;
@@ -20,8 +21,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.catchException;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
@@ -123,5 +126,47 @@ public class LinkServiceTest {
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.linkRepository, times(1)).findAllByTripId(this.trip.getId(), pagination);
+  }
+
+  @Test
+  @DisplayName("getById - Should successfully get a link from a trip")
+  void getByIdSuccess() {
+    Link link = this.links.get(0);
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+
+    Link foundLink = this.linkService.getById(this.trip.getId(), link.getId(), userEmail);
+
+    assertThat(foundLink.getId()).isEqualTo(link.getId());
+    assertThat(foundLink.getTitle()).isEqualTo(link.getTitle());
+    assertThat(foundLink.getLink()).isEqualTo(link.getLink());
+    assertThat(foundLink.getOwnerEmail()).isEqualTo(link.getOwnerEmail());
+    assertThat(foundLink.getTrip().getId()).isEqualTo(link.getTrip().getId());
+    assertThat(foundLink.getCreatedAt()).isEqualTo(link.getCreatedAt());
+    assertThat(foundLink.getUpdatedAt()).isEqualTo(link.getUpdatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+  }
+
+  @Test
+  @DisplayName("getById - Should throw a RecordNotFoundException if the link is not found")
+  void getByIdFailsByLinkNotFound() {
+    UUID linkId = this.links.get(0).getId();
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(linkId, this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.linkService.getById(this.trip.getId(), linkId, userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Link de id: '%s' não encontrado", linkId);
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(linkId, this.trip.getId());
   }
 }
