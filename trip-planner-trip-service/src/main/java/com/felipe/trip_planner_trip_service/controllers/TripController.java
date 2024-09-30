@@ -8,6 +8,7 @@ import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkUpdateDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.mapper.LinkMapper;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
@@ -458,6 +459,25 @@ public class TripController {
     response.setStatus(ResponseConditionStatus.SUCCESS);
     response.setCode(HttpStatus.OK);
     response.setMessage("Link de id: '" + linkId + "' encontrado");
+    response.setData(linkResponseDTO);
+    return response;
+  }
+
+  @PatchMapping("/{tripId}/links/{linkId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<LinkResponseDTO> updateLink(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID linkId,
+    @RequestBody @Valid LinkUpdateDTO linkDTO
+  ) {
+    Link updatedLink = this.linkService.update(tripId, linkId, userEmail, linkDTO);
+    LinkResponseDTO linkResponseDTO = new LinkResponseDTO(updatedLink);
+
+    CustomResponseBody<LinkResponseDTO> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Link atualizado com sucesso");
     response.setData(linkResponseDTO);
     return response;
   }

@@ -1,6 +1,8 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Trip;
@@ -44,6 +46,28 @@ public class LinkService {
   public Link getById(UUID tripId, UUID linkId,  String userEmail) {
     Trip trip = this.tripService.getById(tripId, userEmail);
     return this.linkRepository.findByIdAndTripId(linkId, trip.getId())
+      .orElseThrow(() -> new RecordNotFoundException("Link de id: '" + linkId + "' não encontrado"));
+  }
+  
+  public Link update(UUID tripId, UUID linkId, String userEmail, LinkUpdateDTO linkDTO) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+    return this.linkRepository.findByIdAndTripId(linkId, trip.getId())
+      .map(foundLink -> {
+        String tripOwnerEmail = trip.getOwnerEmail();
+        String linkOwnerEmail = foundLink.getOwnerEmail();
+
+        if(!tripOwnerEmail.equals(userEmail) && !linkOwnerEmail.equals(userEmail)) {
+          throw new AccessDeniedException("Acesso negado: Você não tem permissão para alterar este recurso");
+        }
+
+        if(linkDTO.title() != null) {
+          foundLink.setTitle(linkDTO.title());
+        }
+        if(linkDTO.url() != null) {
+          foundLink.setUrl(linkDTO.url());
+        }
+        return this.linkRepository.save(foundLink);
+      })
       .orElseThrow(() -> new RecordNotFoundException("Link de id: '" + linkId + "' não encontrado"));
   }
 }
