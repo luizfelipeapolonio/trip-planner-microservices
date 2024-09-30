@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.catchException;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -265,5 +267,97 @@ public class LinkServiceTest {
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
     verify(this.linkRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("delete - The link owner should be allowed to successfully delete a link")
+  void deleteBeingLinkOwnerSuccess() {
+    Link link = this.links.get(0);
+    String userEmail = "user2@email.com";
+    ArgumentCaptor<Link> linkCapture = ArgumentCaptor.forClass(Link.class);
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+    doNothing().when(this.linkRepository).delete(linkCapture.capture());
+
+    Link deletedLink = this.linkService.delete(this.trip.getId(), link.getId(), userEmail);
+
+    assertThat(deletedLink.getId()).isEqualTo(linkCapture.getValue().getId());
+    assertThat(deletedLink.getTitle()).isEqualTo(linkCapture.getValue().getTitle());
+    assertThat(deletedLink.getUrl()).isEqualTo(linkCapture.getValue().getUrl());
+    assertThat(deletedLink.getOwnerEmail()).isEqualTo(linkCapture.getValue().getOwnerEmail());
+    assertThat(deletedLink.getTrip().getId()).isEqualTo(linkCapture.getValue().getTrip().getId());
+    assertThat(deletedLink.getCreatedAt()).isEqualTo(linkCapture.getValue().getCreatedAt());
+    assertThat(deletedLink.getUpdatedAt()).isEqualTo(linkCapture.getValue().getUpdatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, times(1)).delete(link);
+  }
+
+  @Test
+  @DisplayName("delete - The trip owner should be allowed to successfully delete a link")
+  void deleteBeingTripOwnerSuccess() {
+    Link link = this.links.get(0);
+    String userEmail = "user1@email.com";
+    ArgumentCaptor<Link> linkCapture = ArgumentCaptor.forClass(Link.class);
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+    doNothing().when(this.linkRepository).delete(linkCapture.capture());
+
+    Link deletedLink = this.linkService.delete(this.trip.getId(), link.getId(), userEmail);
+
+    assertThat(deletedLink.getId()).isEqualTo(linkCapture.getValue().getId());
+    assertThat(deletedLink.getTitle()).isEqualTo(linkCapture.getValue().getTitle());
+    assertThat(deletedLink.getUrl()).isEqualTo(linkCapture.getValue().getUrl());
+    assertThat(deletedLink.getOwnerEmail()).isEqualTo(linkCapture.getValue().getOwnerEmail());
+    assertThat(deletedLink.getTrip().getId()).isEqualTo(linkCapture.getValue().getTrip().getId());
+    assertThat(deletedLink.getCreatedAt()).isEqualTo(linkCapture.getValue().getCreatedAt());
+    assertThat(deletedLink.getUpdatedAt()).isEqualTo(linkCapture.getValue().getUpdatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, times(1)).delete(link);
+  }
+
+  @Test
+  @DisplayName("delete - Should throw an AccessDeniedException if the user is not the trip or the link owner")
+  void deleteFailsByUserIsNotTripOrLinkOwner() {
+    Link link = this.links.get(0);
+    String userEmail = "user3@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+
+    Exception thrown = catchException(() -> this.linkService.delete(this.trip.getId(), link.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para remover este recurso");
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, never()).delete(any());
+  }
+
+  @Test
+  @DisplayName("delete - Should throw a RecordNotFoundException if the link is not found")
+  void deleteFailsByLinkNotFound() {
+    UUID linkId = this.links.get(0).getId();
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(linkId, this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.linkService.delete(this.trip.getId(), linkId, userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Link de id: '%s' não encontrado", linkId);
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(linkId, this.trip.getId());
+    verify(this.linkRepository, never()).delete(any());
   }
 }

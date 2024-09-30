@@ -1230,4 +1230,32 @@ public class TripControllerTest {
 
     verify(this.linkService, times(1)).update(tripId, link.getId(), "user2@email.com", linkUpdateDTO);
   }
+
+  @Test
+  @DisplayName("deleteLink - Should return a success response with ok status code and the deleted link")
+  void deleteLinkSuccess() throws Exception {
+    Link link = this.links.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    var linkResponseDTO = new LinkResponseDTO(link);
+    String url = String.format("%s/%s/links/%s", BASE_URL, tripId, link.getId());
+
+    when(this.linkService.delete(tripId, link.getId(), "user2@email.com")).thenReturn(link);
+
+    this.mockMvc.perform(delete(url)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Link excluído com sucesso"))
+      .andExpect(jsonPath("$.data.deletedLink.id").value(linkResponseDTO.id()))
+      .andExpect(jsonPath("$.data.deletedLink.title").value(linkResponseDTO.title()))
+      .andExpect(jsonPath("$.data.deletedLink.url").value(linkResponseDTO.url()))
+      .andExpect(jsonPath("$.data.deletedLink.tripId").value(linkResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.deletedLink.ownerEmail").value(linkResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.deletedLink.createdAt").value(linkResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.deletedLink.updatedAt").value(linkResponseDTO.updatedAt()));
+
+    verify(this.linkService, times(1)).delete(tripId, link.getId(), "user2@email.com");
+  }
 }
