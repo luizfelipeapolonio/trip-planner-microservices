@@ -70,4 +70,19 @@ public class LinkService {
       })
       .orElseThrow(() -> new RecordNotFoundException("Link de id: '" + linkId + "' não encontrado"));
   }
+
+  public Link delete(UUID tripId, UUID linkId, String userEmail) {
+    Trip trip = this.tripService.getById(tripId, userEmail);
+    Link link = this.linkRepository.findByIdAndTripId(linkId, trip.getId())
+      .orElseThrow(() -> new RecordNotFoundException("Link de id: '" + linkId + "' não encontrado"));
+
+    String tripOwnerEmail = trip.getOwnerEmail();
+    String linkOwnerEmail = link.getOwnerEmail();
+
+    if(!tripOwnerEmail.equals(userEmail) && !linkOwnerEmail.equals(userEmail)) {
+      throw new AccessDeniedException("Acesso negado: Você não tem permissão para remover este recurso");
+    }
+    this.linkRepository.delete(link);
+    return link;
+  }
 }

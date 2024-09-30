@@ -481,4 +481,25 @@ public class TripController {
     response.setData(linkResponseDTO);
     return response;
   }
+
+  @DeleteMapping("/{tripId}/links/{linkId}")
+  @ResponseStatus(HttpStatus.OK)
+  public CustomResponseBody<Map<String, LinkResponseDTO>> deleteLink(
+    @RequestHeader("userEmail") String userEmail,
+    @PathVariable UUID tripId,
+    @PathVariable UUID linkId
+  ) {
+    Link deletedLink = this.linkService.delete(tripId, linkId, userEmail);
+    LinkResponseDTO linkResponseDTO = new LinkResponseDTO(deletedLink);
+
+    Map<String, LinkResponseDTO> deletedLinkMap = new HashMap<>(1);
+    deletedLinkMap.put("deletedLink", linkResponseDTO);
+
+    CustomResponseBody<Map<String, LinkResponseDTO>> response = new CustomResponseBody<>();
+    response.setStatus(ResponseConditionStatus.SUCCESS);
+    response.setCode(HttpStatus.OK);
+    response.setMessage("Link excluído com sucesso");
+    response.setData(deletedLinkMap);
+    return response;
+  }
 }
