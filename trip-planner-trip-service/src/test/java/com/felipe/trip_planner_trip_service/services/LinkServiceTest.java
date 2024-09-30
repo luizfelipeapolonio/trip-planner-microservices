@@ -360,4 +360,39 @@ public class LinkServiceTest {
     verify(this.linkRepository, times(1)).findByIdAndTripId(linkId, this.trip.getId());
     verify(this.linkRepository, never()).delete(any());
   }
+
+  @Test
+  @DisplayName("deleteAllTripLinks - Should successfully delete all trip links and return the quantity of deleted links")
+  void deleteAllTripLinksSuccess() {
+    String userEmail = "user1@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findAllByTripId(this.trip.getId())).thenReturn(this.links);
+
+    int quantityOfDeletedLinks = this.linkService.deleteAllTripLinks(this.trip.getId(), userEmail);
+
+    assertThat(quantityOfDeletedLinks).isEqualTo(this.links.size());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findAllByTripId(this.trip.getId());
+    verify(this.linkRepository, times(1)).deleteAll(this.links);
+  }
+
+  @Test
+  @DisplayName("deleteAllTripLinks - Should throw an AccessDeniedException if the user is not the trip owner")
+  void deleteAllTripLinksFailsByUserIsNoTripOwner() {
+    String userEmail = "user2@email.com";
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+
+    Exception thrown = catchException(() -> this.linkService.deleteAllTripLinks(this.trip.getId(), userEmail));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para remover estes recursos");
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, never()).findAllByTripId(this.trip.getId());
+    verify(this.linkRepository, never()).deleteAll(any());
+  }
 }
