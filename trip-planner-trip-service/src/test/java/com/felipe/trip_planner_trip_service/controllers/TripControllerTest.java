@@ -9,6 +9,7 @@ import com.felipe.trip_planner_trip_service.dtos.invite.InviteParticipantDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.LinkResponsePageDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkUpdateDTO;
 import com.felipe.trip_planner_trip_service.dtos.link.mapper.LinkMapper;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponseDTO;
 import com.felipe.trip_planner_trip_service.dtos.participant.ParticipantResponsePageDTO;
@@ -1196,5 +1197,37 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.data.updatedAt").value(linkResponseDTO.updatedAt()));
 
     verify(this.linkService, times(1)).getById(tripId, link.getId(), userEmail);
+  }
+
+  @Test
+  @DisplayName("updateLink - Should return a success response with ok status code and the updated link")
+  void updateLinkSuccess() throws Exception {
+    Link link = this.links.get(0);
+    UUID tripId = this.trips.get(0).getId();
+    var linkUpdateDTO = new LinkUpdateDTO("Link 1 atualizado", "http://updatedlink.com");
+    var linkResponseDTO = new LinkResponseDTO(link);
+
+    String jsonBody = this.objectMapper.writeValueAsString(linkUpdateDTO);
+    String url = String.format("%s/%s/links/%s", BASE_URL, tripId, link.getId());
+
+    when(this.linkService.update(tripId, link.getId(), "user2@email.com", linkUpdateDTO)).thenReturn(link);
+
+    this.mockMvc.perform(patch(url)
+      .contentType(MediaType.APPLICATION_JSON).content(jsonBody)
+      .accept(MediaType.APPLICATION_JSON)
+      .header("userEmail", "user2@email.com"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value(ResponseConditionStatus.SUCCESS.getValue()))
+      .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
+      .andExpect(jsonPath("$.message").value("Link atualizado com sucesso"))
+      .andExpect(jsonPath("$.data.id").value(linkResponseDTO.id()))
+      .andExpect(jsonPath("$.data.title").value(linkResponseDTO.title()))
+      .andExpect(jsonPath("$.data.url").value(linkResponseDTO.url()))
+      .andExpect(jsonPath("$.data.tripId").value(linkResponseDTO.tripId()))
+      .andExpect(jsonPath("$.data.ownerEmail").value(linkResponseDTO.ownerEmail()))
+      .andExpect(jsonPath("$.data.createdAt").value(linkResponseDTO.createdAt()))
+      .andExpect(jsonPath("$.data.updatedAt").value(linkResponseDTO.updatedAt()));
+
+    verify(this.linkService, times(1)).update(tripId, link.getId(), "user2@email.com", linkUpdateDTO);
   }
 }

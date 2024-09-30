@@ -1,6 +1,8 @@
 package com.felipe.trip_planner_trip_service.services;
 
 import com.felipe.trip_planner_trip_service.dtos.link.LinkCreateDTO;
+import com.felipe.trip_planner_trip_service.dtos.link.LinkUpdateDTO;
+import com.felipe.trip_planner_trip_service.exceptions.AccessDeniedException;
 import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Trip;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.catchException;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
@@ -168,5 +171,99 @@ public class LinkServiceTest {
 
     verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
     verify(this.linkRepository, times(1)).findByIdAndTripId(linkId, this.trip.getId());
+  }
+
+  @Test
+  @DisplayName("update - The link owner should be allowed to successfully update the link")
+  void updateBeingLinkOwnerSuccess() {
+    Link link = this.links.get(0);
+    String userEmail = "user2@email.com";
+    LinkUpdateDTO linkUpdateDTO = new LinkUpdateDTO("Link 1 atualizado", "https://updatedlink.com");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+    when(this.linkRepository.save(link)).thenReturn(link);
+
+    Link updatedLink = this.linkService.update(this.trip.getId(), link.getId(), userEmail, linkUpdateDTO);
+
+    assertThat(updatedLink.getId()).isEqualTo(link.getId());
+    assertThat(updatedLink.getTitle()).isEqualTo(linkUpdateDTO.title());
+    assertThat(updatedLink.getUrl()).isEqualTo(linkUpdateDTO.url());
+    assertThat(updatedLink.getOwnerEmail()).isEqualTo(link.getOwnerEmail());
+    assertThat(updatedLink.getTrip().getId()).isEqualTo(link.getTrip().getId());
+    assertThat(updatedLink.getCreatedAt()).isEqualTo(link.getCreatedAt());
+    assertThat(updatedLink.getUpdatedAt()).isEqualTo(link.getUpdatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, times(1)).save(link);
+  }
+
+  @Test
+  @DisplayName("update - The trip owner should be allowed to successfully update the link")
+  void updateBeingTripOwnerSuccess() {
+    Link link = this.links.get(0);
+    String userEmail = "user1@email.com";
+    LinkUpdateDTO linkUpdateDTO = new LinkUpdateDTO("Link 1 atualizado", "https://updatedlink.com");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+    when(this.linkRepository.save(link)).thenReturn(link);
+
+    Link updatedLink = this.linkService.update(this.trip.getId(), link.getId(), userEmail, linkUpdateDTO);
+
+    assertThat(updatedLink.getId()).isEqualTo(link.getId());
+    assertThat(updatedLink.getTitle()).isEqualTo(linkUpdateDTO.title());
+    assertThat(updatedLink.getUrl()).isEqualTo(linkUpdateDTO.url());
+    assertThat(updatedLink.getOwnerEmail()).isEqualTo(link.getOwnerEmail());
+    assertThat(updatedLink.getTrip().getId()).isEqualTo(link.getTrip().getId());
+    assertThat(updatedLink.getCreatedAt()).isEqualTo(link.getCreatedAt());
+    assertThat(updatedLink.getUpdatedAt()).isEqualTo(link.getUpdatedAt());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, times(1)).save(link);
+  }
+
+  @Test
+  @DisplayName("update - Should throw an AccessDeniedException if the user is not the trip or the link owner")
+  void updateFailsByUserIsNotTripOrLinkOwner() {
+    Link link = this.links.get(0);
+    String userEmail = "user3@email.com";
+    LinkUpdateDTO linkUpdateDTO = new LinkUpdateDTO("Link 1 atualizado", "https://updatedlink.com");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.of(link));
+
+    Exception thrown = catchException(() -> this.linkService.update(this.trip.getId(), link.getId(), userEmail, linkUpdateDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(AccessDeniedException.class)
+      .hasMessage("Acesso negado: Você não tem permissão para alterar este recurso");
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("update - Should throw a RecordNotFoundException if the link is not found")
+  void updateFailsByLinkNotFound() {
+    Link link = this.links.get(0);
+    String userEmail = "user2@email.com";
+    LinkUpdateDTO linkUpdateDTO = new LinkUpdateDTO("Link 1 atualizado", "https://updatedlink.com");
+
+    when(this.tripService.getById(this.trip.getId(), userEmail)).thenReturn(this.trip);
+    when(this.linkRepository.findByIdAndTripId(link.getId(), this.trip.getId())).thenReturn(Optional.empty());
+
+    Exception thrown = catchException(() -> this.linkService.update(this.trip.getId(), link.getId(), userEmail, linkUpdateDTO));
+
+    assertThat(thrown)
+      .isExactlyInstanceOf(RecordNotFoundException.class)
+      .hasMessage("Link de id: '%s' não encontrado", link.getId());
+
+    verify(this.tripService, times(1)).getById(this.trip.getId(), userEmail);
+    verify(this.linkRepository, times(1)).findByIdAndTripId(link.getId(), this.trip.getId());
+    verify(this.linkRepository, never()).save(any());
   }
 }
