@@ -47,7 +47,7 @@ public class LinkMapperTest {
     Link link1 = new Link();
     link1.setId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
     link1.setTitle("Link 1");
-    link1.setLink("https://somelink.com");
+    link1.setUrl("https://somelink.com");
     link1.setOwnerEmail("user2@email.com");
     link1.setCreatedAt(mockDateTime);
     link1.setUpdatedAt(mockDateTime);
@@ -56,7 +56,7 @@ public class LinkMapperTest {
     Link link2 = new Link();
     link2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
     link2.setTitle("Link 2");
-    link2.setLink("https://somelink2.com");
+    link2.setUrl("https://somelink2.com");
     link2.setOwnerEmail("user2@email.com");
     link2.setCreatedAt(mockDateTime);
     link2.setUpdatedAt(mockDateTime);

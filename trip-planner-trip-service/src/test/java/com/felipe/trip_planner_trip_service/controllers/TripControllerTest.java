@@ -188,7 +188,7 @@ public class TripControllerTest {
     Link link1 = new Link();
     link1.setId(UUID.fromString("d2290ead-2b72-4af6-bf58-7d776ad5754e"));
     link1.setTitle("Link 1");
-    link1.setLink("https://somelink.com");
+    link1.setUrl("https://somelink.com");
     link1.setOwnerEmail("user2@email.com");
     link1.setCreatedAt(mockDateTime);
     link1.setUpdatedAt(mockDateTime);
@@ -197,7 +197,7 @@ public class TripControllerTest {
     Link link2 = new Link();
     link2.setId(UUID.fromString("3d9aae79-12a9-4cfd-992f-ecf133d71eae"));
     link2.setTitle("Link 2");
-    link2.setLink("https://somelink2.com");
+    link2.setUrl("https://somelink2.com");
     link2.setOwnerEmail("user2@email.com");
     link2.setCreatedAt(mockDateTime);
     link2.setUpdatedAt(mockDateTime);
@@ -1130,7 +1130,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("Link criado com sucesso"))
       .andExpect(jsonPath("$.data.id").value(linkResponseDTO.id()))
       .andExpect(jsonPath("$.data.title").value(linkResponseDTO.title()))
-      .andExpect(jsonPath("$.data.link").value(linkResponseDTO.link()))
+      .andExpect(jsonPath("$.data.url").value(linkResponseDTO.url()))
       .andExpect(jsonPath("$.data.tripId").value(linkResponseDTO.tripId()))
       .andExpect(jsonPath("$.data.ownerEmail").value(linkResponseDTO.ownerEmail()))
       .andExpect(jsonPath("$.data.createdAt").value(linkResponseDTO.createdAt()))
@@ -1189,7 +1189,7 @@ public class TripControllerTest {
       .andExpect(jsonPath("$.message").value("Link de id: '" + link.getId() + "' encontrado"))
       .andExpect(jsonPath("$.data.id").value(linkResponseDTO.id()))
       .andExpect(jsonPath("$.data.title").value(linkResponseDTO.title()))
-      .andExpect(jsonPath("$.data.link").value(linkResponseDTO.link()))
+      .andExpect(jsonPath("$.data.url").value(linkResponseDTO.url()))
       .andExpect(jsonPath("$.data.tripId").value(linkResponseDTO.tripId()))
       .andExpect(jsonPath("$.data.ownerEmail").value(linkResponseDTO.ownerEmail()))
       .andExpect(jsonPath("$.data.createdAt").value(linkResponseDTO.createdAt()))

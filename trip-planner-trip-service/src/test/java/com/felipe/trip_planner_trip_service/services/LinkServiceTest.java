@@ -64,7 +64,7 @@ public class LinkServiceTest {
     Link link1 = new Link();
     link1.setId(UUID.fromString("77b52d55-3430-4829-a8a4-64ee68336a35"));
     link1.setTitle("Link 1");
-    link1.setLink("https://somelink.com");
+    link1.setUrl("https://somelink.com");
     link1.setOwnerEmail("user2@email.com");
     link1.setCreatedAt(mockDateTime);
     link1.setUpdatedAt(mockDateTime);
@@ -73,7 +73,7 @@ public class LinkServiceTest {
     Link link2 = new Link();
     link2.setId(UUID.fromString("002d3420-7af9-4ea2-9ab8-8afc2fa81da8"));
     link2.setTitle("Link 2");
-    link2.setLink("https://somelink2.com");
+    link2.setUrl("https://somelink2.com");
     link2.setOwnerEmail("user2@email.com");
     link2.setCreatedAt(mockDateTime);
     link2.setUpdatedAt(mockDateTime);
@@ -97,7 +97,7 @@ public class LinkServiceTest {
 
     assertThat(createdLink.getId()).isEqualTo(link.getId());
     assertThat(createdLink.getTitle()).isEqualTo(link.getTitle());
-    assertThat(createdLink.getLink()).isEqualTo(link.getLink());
+    assertThat(createdLink.getUrl()).isEqualTo(link.getUrl());
     assertThat(createdLink.getOwnerEmail()).isEqualTo(link.getOwnerEmail());
     assertThat(createdLink.getCreatedAt()).isEqualTo(link.getCreatedAt());
     assertThat(createdLink.getUpdatedAt()).isEqualTo(link.getUpdatedAt());
@@ -141,7 +141,7 @@ public class LinkServiceTest {
 
     assertThat(foundLink.getId()).isEqualTo(link.getId());
     assertThat(foundLink.getTitle()).isEqualTo(link.getTitle());
-    assertThat(foundLink.getLink()).isEqualTo(link.getLink());
+    assertThat(foundLink.getUrl()).isEqualTo(link.getUrl());
     assertThat(foundLink.getOwnerEmail()).isEqualTo(link.getOwnerEmail());
     assertThat(foundLink.getTrip().getId()).isEqualTo(link.getTrip().getId());
     assertThat(foundLink.getCreatedAt()).isEqualTo(link.getCreatedAt());
