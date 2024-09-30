@@ -26,7 +26,7 @@ public class Link {
   private String title;
 
   @Column(nullable = false)
-  private String link;
+  private String url;
 
   @Column(name = "owner_email", nullable = false)
   private String ownerEmail;
@@ -61,12 +61,12 @@ public class Link {
     this.title = title;
   }
 
-  public String getLink() {
-    return this.link;
+  public String getUrl() {
+    return this.url;
   }
 
-  public void setLink(String link) {
-    this.link = link;
+  public void setUrl(String url) {
+    this.url = url;
   }
 
   public String getOwnerEmail() {

@@ -10,8 +10,8 @@ public record LinkCreateDTO(
   @Length(max = 255, message = "O título do link deve ter no máximo 255 caracteres")
   String title,
 
-  @NotNull(message = "O link é obrigatório")
-  @NotBlank(message = "O link não deve estar em branco")
-  @Length(max = 255, message = "O link deve ter no máximo 255 caracteres ")
-  String link
+  @NotNull(message = "A url é obrigatória")
+  @NotBlank(message = "A url não deve estar em branco")
+  @Length(max = 255, message = "A url deve ter no máximo 255 caracteres ")
+  String url
 ) {}

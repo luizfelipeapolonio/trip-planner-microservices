@@ -28,7 +28,7 @@ public class LinkService {
 
     Link newLink = new Link();
     newLink.setTitle(linkDTO.title());
-    newLink.setLink(linkDTO.link());
+    newLink.setUrl(linkDTO.url());
     newLink.setOwnerEmail(userEmail);
     newLink.setTrip(trip);
 
