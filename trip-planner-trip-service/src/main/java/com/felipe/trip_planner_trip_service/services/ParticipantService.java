@@ -27,18 +27,24 @@ public class ParticipantService {
   private final InviteService inviteService;
   private final TripRepository tripRepository;
   private final InviteRepository inviteRepository;
+  private final ActivityService activityService;
+  private final LinkService linkService;
   private final Logger logger = LoggerFactory.getLogger(ParticipantService.class);
 
   public ParticipantService(
     ParticipantRepository participantRepository,
     InviteService inviteService,
     TripRepository tripRepository,
-    InviteRepository inviteRepository
+    InviteRepository inviteRepository,
+    ActivityService activityService,
+    LinkService linkService
   ) {
     this.participantRepository = participantRepository;
     this.inviteService = inviteService;
     this.tripRepository = tripRepository;
     this.inviteRepository = inviteRepository;
+    this.activityService = activityService;
+    this.linkService = linkService;
   }
 
   public Participant addParticipant(AddParticipantDTO addParticipantDTO, String participantEmail) {
@@ -84,6 +90,8 @@ public class ParticipantService {
       throw new AccessDeniedException("Acesso negado: Você não tem permissão para remover este recurso");
     }
     this.participantRepository.deleteById(participant.getId());
+    this.activityService.deleteAllParticipantActivities(participant.getEmail(), trip.getId());
+    this.linkService.deleteAllParticipantLinks(participant.getEmail(), trip.getId());
     return participant;
   }
 
