@@ -7,6 +7,8 @@ import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Link;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.LinkRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +22,7 @@ public class LinkService {
 
   private final LinkRepository linkRepository;
   private final TripService tripService;
+  private final Logger logger = LoggerFactory.getLogger(LinkService.class);
 
   public LinkService(LinkRepository linkRepository, TripService tripService) {
     this.linkRepository = linkRepository;
@@ -97,5 +100,13 @@ public class LinkService {
     List<Link> links = this.linkRepository.findAllByTripId(trip.getId());
     this.linkRepository.deleteAll(links);
     return links.size();
+  }
+
+  void deleteAllParticipantLinks(String participantEmail, UUID tripId) {
+    int quantityOfDeletedLinks = this.linkRepository.deleteAllByOwnerEmailAndTripId(participantEmail, tripId);
+    logger.info(
+      "Excluindo Links: ownerEmail: {} - tripId: {} - Quantidade: {}",
+      participantEmail, tripId, quantityOfDeletedLinks
+    );
   }
 }
