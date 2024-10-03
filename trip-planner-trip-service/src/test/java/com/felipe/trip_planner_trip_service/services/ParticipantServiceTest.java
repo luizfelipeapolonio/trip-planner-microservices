@@ -54,6 +54,12 @@ public class ParticipantServiceTest {
   @Mock
   private InviteRepository inviteRepository;
 
+  @Mock
+  private ActivityService activityService;
+
+  @Mock
+  private LinkService linkService;
+
   private List<Participant> participants;
   private Invite invite;
   private Trip trip;
@@ -253,6 +259,8 @@ public class ParticipantServiceTest {
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, times(1)).findByIdAndTripId(participant.getId(), this.trip.getId());
     verify(this.participantRepository, times(1)).deleteById(participant.getId());
+    verify(this.activityService, times(1)).deleteAllParticipantActivities(participant.getEmail(), this.trip.getId());
+    verify(this.linkService, times(1)).deleteAllParticipantLinks(participant.getEmail(), this.trip.getId());
   }
 
   @Test
@@ -275,6 +283,8 @@ public class ParticipantServiceTest {
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, times(1)).findByIdAndTripId(participant.getId(), this.trip.getId());
     verify(this.participantRepository, times(1)).deleteById(participant.getId());
+    verify(this.activityService, times(1)).deleteAllParticipantActivities(participant.getEmail(), this.trip.getId());
+    verify(this.linkService, times(1)).deleteAllParticipantLinks(participant.getEmail(), this.trip.getId());
   }
 
   @Test
@@ -295,6 +305,8 @@ public class ParticipantServiceTest {
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, times(1)).findByIdAndTripId(participant.getId(), this.trip.getId());
     verify(this.participantRepository, never()).deleteById(any());
+    verify(this.activityService, never()).deleteAllParticipantActivities(any(), any());
+    verify(this.linkService, never()).deleteAllParticipantLinks(any(), any());
   }
 
   @Test
@@ -314,6 +326,8 @@ public class ParticipantServiceTest {
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, never()).findByIdAndTripId(participantId, this.trip.getId());
     verify(this.participantRepository, never()).deleteById(any());
+    verify(this.activityService, never()).deleteAllParticipantActivities(any(), any());
+    verify(this.linkService, never()).deleteAllParticipantLinks(any(), any());
   }
 
   @Test
@@ -334,5 +348,7 @@ public class ParticipantServiceTest {
     verify(this.tripRepository, times(1)).findById(this.trip.getId());
     verify(this.participantRepository, times(1)).findByIdAndTripId(participantId, this.trip.getId());
     verify(this.participantRepository, never()).deleteById(any());
+    verify(this.activityService, never()).deleteAllParticipantActivities(any(), any());
+    verify(this.linkService, never()).deleteAllParticipantLinks(any(), any());
   }
 }

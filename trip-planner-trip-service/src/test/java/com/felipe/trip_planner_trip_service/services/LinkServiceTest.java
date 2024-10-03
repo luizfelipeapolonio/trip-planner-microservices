@@ -395,4 +395,15 @@ public class LinkServiceTest {
     verify(this.linkRepository, never()).findAllByTripId(this.trip.getId());
     verify(this.linkRepository, never()).deleteAll(any());
   }
+
+  @Test
+  @DisplayName("deleteAllParticipantLinks - Should successfully delete all participant links given user email and trip id")
+  void deleteAllParticipantLinksSuccess() {
+    String participantEmail = "user2@email.com";
+    UUID tripId = this.trip.getId();
+
+    this.linkService.deleteAllParticipantLinks(participantEmail, tripId);
+
+    verify(this.linkRepository, times(1)).deleteAllByOwnerEmailAndTripId(participantEmail, tripId);
+  }
 }

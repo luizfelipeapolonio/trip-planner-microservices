@@ -384,4 +384,15 @@ public class ActivityServiceTest {
     verify(this.activityRepository, never()).findAllByTripId(this.trip.getId());
     verify(this.activityRepository, never()).deleteAll(any());
   }
+
+  @Test
+  @DisplayName("deleteAllParticipantActivities - Should successfully delete all participant activities given user email and trip id")
+  void deleteAllParticipantActivitiesSuccess() {
+    String participantEmail = "user2@email.com";
+    UUID tripId = this.trip.getId();
+
+    this.activityService.deleteAllParticipantActivities(participantEmail, tripId);
+
+    verify(this.activityRepository, times(1)).deleteAllByOwnerEmailAndTripId(participantEmail, tripId);
+  }
 }
