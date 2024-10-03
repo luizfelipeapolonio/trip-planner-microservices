@@ -6,6 +6,8 @@ import com.felipe.trip_planner_trip_service.exceptions.RecordNotFoundException;
 import com.felipe.trip_planner_trip_service.models.Activity;
 import com.felipe.trip_planner_trip_service.models.Trip;
 import com.felipe.trip_planner_trip_service.repositories.ActivityRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ public class ActivityService {
 
   private final ActivityRepository activityRepository;
   private final TripService tripService;
+  private final Logger logger = LoggerFactory.getLogger(ActivityService.class);
 
   public ActivityService(ActivityRepository activityRepository, TripService tripService) {
     this.activityRepository = activityRepository;
@@ -91,5 +94,13 @@ public class ActivityService {
     List<Activity> activities = this.activityRepository.findAllByTripId(tripId);
     this.activityRepository.deleteAll(activities);
     return activities.size();
+  }
+
+  void deleteAllParticipantActivities(String participantEmail, UUID tripId) {
+    int quantityOfDeletedActivities = this.activityRepository.deleteAllByOwnerEmailAndTripId(participantEmail, tripId);
+    logger.info(
+      "Excluindo Activities: ownerEmail: {} - tripId: {} - Quantidade: {}",
+      participantEmail, tripId, quantityOfDeletedActivities
+    );
   }
 }
