@@ -985,8 +985,9 @@ As ferramentas que foram utilizadas na construção do projeto:
 [Voltar para as rotas ⬆](#endpoints)
 
 <h2 id="run">⚙ Como rodar a aplicação</h2>
+
 -> Para executar a aplicação é necessário ter instalado o [Docker](https://www.docker.com/) e
-o [Git](https://git-scm.com/). <br />
+o [Git](https://git-scm.com/).
 - Primeiro, clone este repositório:
 
   ```bash
