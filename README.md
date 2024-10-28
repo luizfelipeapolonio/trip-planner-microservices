@@ -11,7 +11,7 @@ Discovery** para orquestrar todos os serviços.
 
 <br />
 
-<img src="./assets/trip_planner_microservices.png" />
+<img src="./assets/trip_planner_microservices.png" alt="Imagem demonstrando a arquitetura dos microsserviços" />
 
 <br /><br />
 
@@ -41,6 +41,7 @@ As ferramentas que foram utilizadas na construção do projeto:
 - [JPA + Hibernate](https://spring.io/projects/spring-data-jpa#overview)
 - [Java Bean Validation](https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html#validation-beanvalidation-overview)
 - [PostgreSQL](https://www.postgresql.org/)
+- [Mailpit](https://mailpit.axllent.org/)
 - [JUnit5 + Mockito](https://docs.spring.io/spring-framework/reference/testing.html)
 - [JWT (JSON Web Token)](https://github.com/auth0/java-jwt)
 - [Docker](https://www.docker.com/)
@@ -103,6 +104,11 @@ As ferramentas que foram utilizadas na construção do projeto:
     - **Kafka Consumer:** Responsável por consumir às mensagens do tópico do Kafka referente aos convites de 
     participação.
     - **Envio de e-mail:** Cria e envia e-mail para o usuário convidado com o código de confirmação.
+
+- ### Mailpit
+  Uso da ferramenta [Mailpit](https://mailpit.axllent.org/) como servidor SMTP e como cliente de e-mail.
+    - Convite enviado e aberto no cliente de e-mail `mailpit`:
+    <img src="./assets/trip_invite_mailpit.png" />
 
 <h2 id="endpoints">🧭 Rotas da API</h2>
 
@@ -978,4 +984,42 @@ As ferramentas que foram utilizadas na construção do projeto:
 ```
 [Voltar para as rotas ⬆](#endpoints)
 
-<br />
+<h2 id="run">⚙ Como rodar a aplicação</h2>
+-> Para executar a aplicação é necessário ter instalado o [Docker](https://www.docker.com/) e
+o [Git](https://git-scm.com/). <br />
+- Primeiro, clone este repositório:
+
+  ```bash
+  $ git clone https://github.com/luizfelipeapolonio/trip-planner-microservices
+  ```
+- Acesse a pasta da aplicação:
+  ```bash
+  $ cd trip-planner-microservices
+  ```
+- Renomeie o arquivo `jwt.env.example` para `jwt.env`, e coloque o par de chaves RSA no arquivo e defina o nome do 
+issuer do token jwt:
+  ```bash
+  JWT_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----
+  RSA KEY HERE
+  -----END PUBLIC KEY-----'
+
+  JWT_PRIVATE_KEY='-----BEGIN PRIVATE KEY-----
+  RSA KEY HERE
+  -----END PRIVATE KEY-----'
+  
+  JWT_ISSUER='ISSUER NAME HERE'
+  ```
+- Agora, basta buildar e inicializar todos os containers com o comando:
+  ```bash
+  $ docker compose up -d
+  ```
+- Todos os microsserviços e banco de dados serão construídos e inicializados. A aplicação estará disponível no endereço
+  `http://localhost:8080` e o cliente de e-mail `mailpit` estará disponível em `http://localhost:8025` 
+
+<h2 id="license">📝 Licença</h2>
+
+Este repositório está licenciado pela **MIT LICENSE**. Para mais informações, leia o arquivo [LICENSE](./LICENSE) contido neste repositório.
+
+<h2 id="author">Autor</h2>
+
+Linkedin: [acesse meu perfil](https://www.linkedin.com/in/luiz-felipe-salgado-31a969273/).
