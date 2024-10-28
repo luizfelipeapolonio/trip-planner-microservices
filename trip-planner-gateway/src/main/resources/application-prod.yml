@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: trip-planner-gateway
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: '*'
+            allowedMethods:
+              - GET
+              - POST
+              - PATCH
+              - PUT
+              - DELETE
+      routes:
+        - id: trip-planner-user-service
+          uri: lb://TRIP-PLANNER-USER-SERVICE
+          predicates:
+            - Path=/auth/**,/users/**
+          filters:
+            - PrefixPath=/api
+            - AuthenticationFilter
+
+        - id: trip-planner-trip-service
+          uri: lb://TRIP-PLANNER-TRIP-SERVICE
+          predicates:
+            - Path=/trips/**,/participants/**
+          filters:
+            - PrefixPath=/api
+            - AuthenticationFilter
+  output:
+    ansi:
+      enabled: ALWAYS
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://trip-planner-service-discovery:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: DEBUG
+  reactor:
+    netty:
+      http:
+        client: DEBUG
